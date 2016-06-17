@@ -30,13 +30,11 @@
 
 (s/def ::mg/db mg/db?)
 
-(s/def ::mg/any (constantly true))
-
-(s/def ::mg/entity (s/map-of keyword? ::mg/any))
+(s/def ::mg/entity (s/map-of keyword? ::s/any))
 
 (s/def ::mg/reference
   (s/and vector?
-         (s/tuple keyword? ::mg/any)))
+         (s/tuple keyword? ::s/any)))
 
 (s/def ::mg/pull-pattern
   (s/* (s/or :attr keyword?
