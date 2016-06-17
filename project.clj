@@ -1,4 +1,4 @@
-(defproject com.stuartsierra/mapgraph "0.1.0"
+(defproject com.stuartsierra/mapgraph "0.1.1-SNAPSHOT"
   :description "Basic in-memory graph database of maps with links"
   :url "https://github.com/stuartsierra/mapgraph"
   :license {:name "The MIT License"
