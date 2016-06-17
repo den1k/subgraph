@@ -4,6 +4,6 @@
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.7.0"]]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0-alpha5"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.9.0-alpha7"]
                                   [org.clojure/tools.namespace "0.3.0-alpha1"]
                                   [org.clojure/test.check "0.9.0"]]}})
