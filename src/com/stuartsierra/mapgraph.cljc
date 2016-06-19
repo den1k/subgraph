@@ -80,10 +80,18 @@
 (defn- seek [pred s]
   (some #(when (pred %) %) s))
 
+(defn- possible-entity-map?
+  "True if x is a non-sorted map. This check prevents errors from
+  trying to compare keywords with incompatible keys in sorted maps."
+  [x]
+  (and (map? x)
+       (not (sorted? x))))
+
 (defn- find-id-key
-  "Returns the first identifier keys found in map."
+  "Returns the first identifier key found in map, or nil if it is not
+  a valid entity map."
   [map id-attrs]
-  (when (map? map)
+  (when (possible-entity-map? map)
     (seek #(contains? map %) id-attrs)))
 
 (defn- get-ref
@@ -152,7 +160,8 @@
                                       ::attribute k
                                       ::value v})))
                    (recur (into! sub-entities values)
-                          (assoc! normalized k (zipmap (keys v) refs))
+                          (assoc! normalized k (into (empty v)  ; preserve type
+                                                     (map vector (keys v) refs)))
                           (rest kvs)))
                ;; v is a plain map
                (recur sub-entities

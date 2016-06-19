@@ -145,6 +145,71 @@
                                [::a-id a-id])
                       [::b-ref ::b-id]))))))
 
+;; entity specs used for the following tests
+(s/def ::C (s/keys :req [::c-id ::ds]))
+(s/def ::D (s/keys :req [::d-id]))
+(s/def ::c-id integer?)
+(s/def ::d-id integer?)
+(s/def ::ds (s/and (s/coll-of ::D [])
+                   not-empty))
+
+(def ^:private coll-pred
+  "Mapping from a collection constructor (given another non-empty
+  collection) to a predicate function that checks for the same type.
+  Used to construct various types of collections and verify that they
+  round-trip as the 'same' type, according to the predicate."
+  {seq seq?
+   vec vector?
+   set set?
+   #(apply sorted-set %&) #(and (set? %) (sorted? %))})
+
+(defspec t-roundtrip-ref-coll 100
+  ;; Preserve the type (seq, vector, set, sorted set) of collections
+  ;; of lookup refs.
+  (let [db (-> (mg/new-db)
+               (mg/add-id-attr ::c-id ::d-id))]
+    (prop/for-all [c (s/gen ::C)
+                   [coll-fn pred] (gen/elements coll-pred)]
+      (let [c (update c ::ds coll-fn)
+            new-db (mg/add db c)]
+        (pred (::ds (mg/pull new-db '[::ds] [::c-id (::c-id c)])))))))
+
+;; entity specs used for the following tests
+(s/def ::E (s/keys :req [::e-id ::fs]))
+(s/def ::F (s/keys :req [::f-id]))
+(s/def ::e-id integer?)
+(s/def ::f-id integer?)
+(s/def ::fs (s/and (s/map-of ::s/any ::F)
+                   not-empty))
+
+(defspec t-roundtrip-map 10
+  ;; Round trip a map of lookup refs, any key type.
+  (let [db (-> (mg/new-db)
+               (mg/add-id-attr ::e-id ::f-id))]
+    (prop/for-all [e (s/gen ::E)]
+      (let [new-db (mg/add db e)]
+        (= e (mg/pull new-db
+                      [::e-id {::fs [::f-id]}]
+                      [::e-id (::e-id e)]))))))
+
+;; entity specs used for the following tests (sorted map)
+(s/def ::G (s/keys :req [::g-id ::hs]))
+(s/def ::H (s/keys :req [::h-id]))
+(s/def ::g-id integer?)
+(s/def ::h-id integer?)
+(s/def ::hs (s/and (s/coll-of (s/tuple string? ::H) (sorted-map))
+                   not-empty))
+
+(defspec t-roundtrip-sorted-map 10
+  ;; Sorted map of lookup refs preserves its sorted-ness.
+  (let [db (-> (mg/new-db)
+               (mg/add-id-attr ::g-id ::h-id))]
+    (prop/for-all [g (s/gen ::G)]
+      (let [new-db (mg/add db g)]
+        (sorted? (::hs (mg/pull new-db
+                                [::g-id {::hs [::h-id]}]
+                                [::g-id (::g-id g)])))))))
+
 ;; Local Variables:
 ;; eval: (put-clojure-indent 'for-all :defn)
 ;; End:
