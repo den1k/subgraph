@@ -9,25 +9,25 @@ in Clojure and ClojureScript
 
 * I publish releases to [Clojars]
 
-* Latest stable release is [0.1.0](https://github.com/stuartsierra/mapgraph/tree/0.1.0)
+* Latest stable release is [0.2.0](https://github.com/stuartsierra/mapgraph/tree/0.2.0)
 
 * [All releases](https://clojars.org/com.stuartsierra/mapgraph)
 
 [Leiningen] dependency information:
 
-    [com.stuartsierra/mapgraph "0.1.0"]
+    [com.stuartsierra/mapgraph "0.2.0"]
 
 [Maven] dependency information:
 
     <dependency>
       <groupId>com.stuartsierra</groupId>
       <artifactId>mapgraph</artifactId>
-      <version>0.1.0</version>
+      <version>0.2.0</version>
     </dependency>
 
 [Gradle] dependency information:
 
-    compile "com.stuartsierra:mapgraph:0.1.0"
+    compile "com.stuartsierra:mapgraph:0.2.0"
 
 [Clojars]: http://clojars.org/
 [Leiningen]: http://leiningen.org/
