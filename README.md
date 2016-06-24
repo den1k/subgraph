@@ -283,6 +283,8 @@ MapGraph is different from Datomic/Datascript in the following ways:
 
 * Values may include collections of any type
 
+* Empty collections will be stored rather than ignored
+
 * Updating the value of an attribute with a collection always replaces
   the entire previous value
 
