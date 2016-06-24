@@ -249,7 +249,7 @@
   [db result pull-map entity]
   (reduce-kv
    (fn [result k join-expr]
-     (when-let [val (get entity k)]
+     (if-let [val (get entity k)]
        (if (ref? db val)
          (assoc result k (pull db join-expr val))
          (do (when-not (coll? val)
@@ -259,7 +259,9 @@
                                 ::entity entity
                                 ::attribute k
                                 ::value val})))
-             (assoc result k (keept #(pull db join-expr %) val))))))
+             (assoc result k (keept #(pull db join-expr %) val))))
+       ;; no value for key
+       result))
    result
    pull-map))
 
