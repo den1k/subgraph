@@ -79,6 +79,20 @@
           :user/name "Claire"
           :user/friends #{}})))
 
+(deftest t-do-not-pull-simple-keys-not-in-entity
+  (is (= (mg/pull examples/friends
+                  [:user/id :user/name :foo :bar]
+                  [:user/id 3])
+         {:user/id 3
+          :user/name "Claire"})))
+
+(deftest t-do-not-pull-ref-keys-not-in-entity
+  (is (= (mg/pull examples/friends
+                  [:user/id :user/name {:foo '[*], :bar '[*]}]
+                  [:user/id 3])
+         {:user/id 3
+          :user/name "Claire"})))
+
 ;;; Generative tests
 
 (defspec t-roundtrip-pull-star 10

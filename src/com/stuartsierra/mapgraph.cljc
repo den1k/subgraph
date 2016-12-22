@@ -287,7 +287,9 @@
      (fn [result expr]
        (cond
          (keyword? expr)
-         (assoc result expr (get entity expr))
+         (if-let [[_ val] (find entity expr)]
+           (assoc result expr val)
+           result)
 
          (map? expr)
          (pull-join db result expr entity)
