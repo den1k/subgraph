@@ -242,28 +242,90 @@
        (= 2 (count ref))
        (contains? (::id-attrs db) (first ref))))
 
-(declare pull)
+(defn- join-type
+  "Returns the join type of a pull map."
+  [pull-map]
+  (let [[[_ val]] (seq pull-map)]
+    (if (or (number? val) (= '... val))
+      ::rec-join
+      ::join)))
 
-(defn- pull-join
-  "Executes a pull map expression on entity."
-  [db result pull-map entity]
-  (reduce-kv
-   (fn [result k join-expr]
-     (if-let [val (get entity k)]
-       (if (ref? db val)
-         (assoc result k (pull db join-expr val))
-         (do (when-not (coll? val)
-               (throw (ex-info "pull map pattern must be to a lookup ref or a collection of lookup refs."
-                               {:reason ::pull-join-not-ref
-                                ::pull-map-pattern pull-map
-                                ::entity entity
-                                ::attribute k
-                                ::value val})))
-             (assoc result k (keept #(pull db join-expr %) val))))
-       ;; no value for key
-       result))
-   result
-   pull-map))
+(defn expr-type
+  "Returns an expression type."
+  [expr]
+  (cond
+    (vector? expr)  ::pattern
+    (keyword? expr) ::attr
+    (map? expr)     ::join
+    (= '* expr)     ::*
+    :else           nil))
+
+(defmulti parse-expr
+  (fn [_ _ expr]
+    (expr-type expr)))
+
+(defmethod parse-expr :default
+  [{:keys [pattern lookup-ref]} _ expr]
+  (throw
+   (ex-info
+    "Invalid form in pull pattern"
+    {:reason ::invalid-pull-form
+     ::form expr
+     ::pattern pattern
+     ::lookup-ref lookup-ref})))
+
+(defmethod parse-expr ::pattern
+  [{:keys [parser db db-get-ref lookup-ref] :as context} result pattern]
+  (when-let [entity (db-get-ref context pattern lookup-ref)]
+    (let [pattern-context (assoc context :entity entity)]
+      (reduce
+       (fn [result expr]
+         (parser pattern-context result expr))
+       result pattern))))
+
+(defmethod parse-expr ::attr
+  [{:keys [entity]} result k]
+  (if-let [[_ val] (find entity k)]
+    (assoc result k val)
+    result))
+
+(defmethod parse-expr ::join
+  [{:keys [parser db db-ref? entity] :as context} result pull-map]
+  (letfn [(parse-one [join-expr ref]
+            (let [join-context (assoc context :lookup-ref ref)]
+              (parser join-context {} join-expr)))
+          (parse-many [join-expr refs]
+            (keept (fn [ref] (parse-one join-expr ref)) refs))]
+    (reduce-kv
+     (fn [result k join-expr]
+       (if-let [val (get entity k)]
+         (cond
+           (db-ref? db val)
+           (assoc result k (parse-one join-expr val))
+
+           (coll? val)
+           (assoc result k (parse-many join-expr val))
+
+           :else
+           (throw
+            (ex-info
+             "pull map pattern must be to a lookup ref or a collection of lookup refs."
+             {:reason ::pull-join-not-ref
+              ::pull-map-pattern pull-map
+              ::entity entity
+              ::attribute k
+              ::value val})))
+         ;; no value for key
+         result))
+     result pull-map)))
+
+(defmethod parse-expr ::*
+  [{:keys [entity]} result _]
+  (merge result (apply dissoc entity (keys result))))
+
+(defn default-get-ref
+  [{:keys [db] :as context} _ lookup-ref]
+  (get db lookup-ref))
 
 (defn pull
   "Returns a map representation of the entity found at lookup ref in
@@ -281,27 +343,19 @@
            lookup refs. Expands each lookup ref to the entity it refers
            to, then applies pull to each of those entities using the
            sub-pattern."
-  [db pattern lookup-ref]
-  (when-let [entity (get db lookup-ref)]
-    (reduce
-     (fn [result expr]
-       (cond
-         (keyword? expr)
-         (if-let [[_ val] (find entity expr)]
-           (assoc result expr val)
-           result)
-
-         (map? expr)
-         (pull-join db result expr entity)
-
-         (= '* expr)  ; don't re-merge things we already joined
-         (merge result (apply dissoc entity (keys result)))
-
-         :else
-         (throw (ex-info "Invalid form in pull pattern"
-                         {:reason ::invalid-pull-form
-                          ::form expr
-                          ::pattern pattern
-                          ::lookup-ref lookup-ref}))))
-     {}
-     pattern)))
+  ([db pattern lookup-ref]
+   (pull db pattern lookup-ref nil))
+  ([db pattern lookup-ref {:as   options
+                           :keys [parser
+                                  db-ref?
+                                  db-get-ref]
+                           :or   {parser     parse-expr
+                                  db-ref?    ref?
+                                  db-get-ref default-get-ref}}]
+   (let [context {:parser     parser
+                  :db         db
+                  :db-ref?    db-ref?
+                  :db-get-ref db-get-ref
+                  :lookup-ref lookup-ref}
+         result  {}]
+     (parser context result pattern))))

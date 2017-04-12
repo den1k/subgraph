@@ -23,7 +23,7 @@
 ;; SOFTWARE.
 
 (ns com.stuartsierra.mapgraph.spec
-  "clojure.spec definitions for mapgraph functions. 
+  "clojure.spec definitions for mapgraph functions.
   Requires Clojure 1.9.0."
   (:require [clojure.spec :as s]
             [com.stuartsierra.mapgraph :as mg]))
@@ -36,10 +36,24 @@
   (s/and vector?
          (s/tuple keyword? ::s/any)))
 
-(s/def ::mg/pull-pattern
+(s/def ::mg/lookup-ref ::mg/reference)
+
+(s/def ::mg/pattern
   (s/* (s/or :attr keyword?
              :star #{'*}
-             :join (s/map-of keyword? ::mg/pull-pattern))))
+             :join (s/map-of keyword? ::mg/pattern))))
+
+(s/def ::mg/result (s/nilable map?))
+
+(s/def ::mg/parser-context
+  (s/keys :req-un [::mg/parser ::mg/db ::mg/lookup-ref]
+          :opt-un [::mg/pattern ::mg/entity]))
+
+(s/def ::mg/parser
+  (s/fspec :args (s/cat :context ::mg/parser-context
+                        :result ::mg/result
+                        :pattern ::mg/pattern)
+           :ret ::mg/result))
 
 (s/fdef mg/add-id-attr
   :args (s/cat :db ::mg/db
@@ -57,11 +71,21 @@
           (every? #(contains? ret (mg/ref-to db %)) entities))))
 
 (s/fdef mg/pull
-  :args (s/& (s/cat :db ::mg/db
-                    :pull (s/spec ::mg/pull-pattern)
-                    :ref ::mg/reference)
-             (fn [{:keys [db ref]}]
-               (mg/ref? db ref)))
+  :args (s/or :default
+              (s/&
+               (s/cat :db ::mg/db
+                      :pull (s/spec ::mg/pattern)
+                      :ref ::mg/reference)
+               (fn [{:keys [db ref]}]
+                 (mg/ref? db ref)))
+              :pull-ref-fn
+              (s/&
+               (s/cat :db ::mg/db
+                      :parser ::mg/parser
+                      :patter (s/spec ::mg/pattern)
+                      :ref ::mg/reference)
+               (fn [{:keys [db ref]}]
+                 (mg/ref? db ref))))
   :ret (s/nilable map?))
 
 ;; Local Variables:
