@@ -3,7 +3,8 @@
   :url "https://github.com/stuartsierra/mapgraph"
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"}
-  :dependencies [[org.clojure/clojure "1.7.0"]]
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [re-frame "0.9.2"]]
   :profiles
   {:dev {:dependencies
          [[com.datomic/datomic-free "0.9.5372"]
