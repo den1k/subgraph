@@ -4,34 +4,30 @@
    [re-frame.core :as re-frame]
    [re-frame.interop :as interop]))
 
+;; * Debug
+
+(defn now
+  []
+  #?(:cljs (.toFixed (.now js/performance) 3)
+     :clj (java.util.Date.)))
+
+(defn debug-computed-at
+  "Assoc ::computed-at in the entity's metadata. Meant to be used inside a
+  reaction in order for downstream consumers to check how often the reaction is
+  recomputed."
+  [entity]
+  (cond
+    (map? entity)        (with-meta entity {::computed-at (now)})
+    (sequential? entity) (into (empty entity) (map debug-computed-at) entity)
+    :else entity))
+
+
+;; * Derefable db helpers
+
 (defn- <sub
   "Subscribe to and deref event"
   [event]
   (deref (re-frame/subscribe event)))
-
-;; * Subscriptions
-
-(re-frame/reg-sub
- ::id-attrs
- (fn sub-id-attrs
-   [db [_]]
-   {:pre [(not (interop/deref? db))]}
-   (select-keys db [::mg/id-attrs])))
-
-(re-frame/reg-sub-raw
- ::pull
- (fn pull-sub
-   [db [_ pattern lookup-ref]]
-   {:pre [(interop/deref? db)]}
-   (interop/make-reaction
-    #(mg/pull
-      db pattern lookup-ref
-      {:parser     parse-expr
-       :db-ref?    ref?
-       :db-get-ref get-ref}))))
-
-
-;; * Derefable db helpers
 
 (defn ref?
   [_ expr]
@@ -57,6 +53,29 @@
     (if (and (not (skip? expr))
              (or (db-ref? db expr)
                  (join? expr)))
-      (deref (interop/make-reaction parse))
+      (deref
+       (interop/make-reaction
+        (comp debug-computed-at parse)))
       (parse))))
 
+
+;; * Subscriptions
+
+(re-frame/reg-sub
+ ::id-attrs
+ (fn sub-id-attrs
+   [db [_]]
+   {:pre [(not (interop/deref? db))]}
+   (select-keys db [::mg/id-attrs])))
+
+(re-frame/reg-sub-raw
+ ::pull
+ (fn pull-sub
+   [db [_ pattern lookup-ref]]
+   {:pre [(interop/deref? db)]}
+   (interop/make-reaction
+    #(mg/pull
+      db pattern lookup-ref
+      {:parser     parse-expr
+       :db-ref?    ref?
+       :db-get-ref get-ref}))))
