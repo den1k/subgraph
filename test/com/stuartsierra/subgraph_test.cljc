@@ -12,13 +12,13 @@
             [re-frame.core :as re-frame]
             [re-frame.interop :as interop]))
 
-(defn db-fixture
+(defn re-frame-db-fixture
   [f]
   (re-frame/reg-event-db ::initialize-db (fn  [_ _] examples/friends))
   (re-frame/dispatch-sync [::initialize-db])
   (f))
 
-(use-fixtures :each db-fixture)
+(use-fixtures :once re-frame-db-fixture)
 
 (deftest t-id-attrs-subscription
   (is (= {::mg/id-attrs #{:user/id}} (deref (re-frame/subscribe [::sg/id-attrs])))))
@@ -30,9 +30,9 @@
   (is (= (deref
           (re-frame/subscribe
            [::sg/pull
-            '[:user/name
-              {:user/friends [:user/name
-                              {:user/friends [:user/name]}]}]
+            [:user/name
+             {:user/friends [:user/name
+                             {:user/friends [:user/name]}]}]
             [:user/id 1]]) )
          {:user/name "Alice"
           :user/friends
@@ -41,6 +41,22 @@
             {:user/name "Bob"
              :user/friends #{{:user/name "Emily"}
                              {:user/name "Frank"}}}}})))
+(deftest t-pull-query-link
+  (is (= (deref (re-frame/subscribe
+                 [::sg/pull
+                  [{[:link/user '_]
+                    [:user/id :user/name {:foo '[*], :bar '[*]}]}]]))
+         {:link/user
+          {:user/id 3
+           :user/name "Claire"}})))
+
+(deftest t-pull-link
+  (is (= (deref (re-frame/subscribe
+                 [::sg/pull-link
+                  [:user/id :user/name {:foo '[*], :bar '[*]}]
+                  :link/user]))
+         {:user/id 3
+          :user/name "Claire"})))
 ;; TODO Updates
 
 (re-frame/reg-event-db

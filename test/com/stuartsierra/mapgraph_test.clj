@@ -93,6 +93,21 @@
          {:user/id 3
           :user/name "Claire"})))
 
+(deftest t-pull-query-link
+  (is (= (mg/pull examples/friends
+                  [{[:link/user '_]
+                    [:user/id :user/name {:foo '[*], :bar '[*]}]}])
+         {:link/user
+          {:user/id 3
+           :user/name "Claire"}})))
+
+(deftest t-pull-link
+  (is (= (mg/pull-link examples/friends
+                       [:user/id :user/name {:foo '[*], :bar '[*]}]
+                       :link/user)
+         {:user/id 3
+          :user/name "Claire"})))
+
 ;;; Generative tests
 
 (defspec t-roundtrip-pull-star 10

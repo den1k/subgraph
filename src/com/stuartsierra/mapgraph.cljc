@@ -242,13 +242,11 @@
        (= 2 (count ref))
        (contains? (::id-attrs db) (first ref))))
 
-(defn- join-type
-  "Returns the join type of a pull map."
-  [pull-map]
-  (let [[[_ val]] (seq pull-map)]
-    (if (or (number? val) (= '... val))
-      ::rec-join
-      ::join)))
+(defn link?
+  [expr]
+  (when (map? expr)
+    (when (vector? (key (first expr)))
+      (= '_ (second (key (first expr)))))))
 
 (defn expr-type
   "Returns an expression type."
@@ -256,6 +254,7 @@
   (cond
     (vector? expr)  ::pattern
     (keyword? expr) ::attr
+    (link? expr)    ::link
     (map? expr)     ::join
     (= '* expr)     ::*
     :else           nil))
@@ -276,12 +275,32 @@
 
 (defmethod parse-expr ::pattern
   [{:keys [parser db db-get-ref lookup-ref] :as context} result pattern]
-  (when-let [entity (db-get-ref context pattern lookup-ref)]
-    (let [pattern-context (assoc context :entity entity)]
-      (reduce
-       (fn [result expr]
-         (parser pattern-context result expr))
-       result pattern))))
+  (let [entity (db-get-ref context pattern lookup-ref)
+        links-in-pattern? (some link? pattern)]
+    (when (or (some? entity) links-in-pattern?)
+      (let [context' (assoc context :entity entity)]
+        (reduce
+         (fn [result expr]
+           (parser context' result expr))
+         result pattern)))))
+
+(defmethod parse-expr ::pattern
+  [{:keys [parser db db-get-ref lookup-ref] :as context} result pattern]
+  ;; We have two conflicting implementation details here: 1. links require that
+  ;; we parse the pattern even when no lookup-ref is providied (that is their
+  ;; whole purpose) 2. We should return nil in the case where the pattern
+  ;; doesn't contain any links and the lookup-ref provided is not-found. We
+  ;; could have made this logical distinction more visible in the code by adding
+  ;; a branching condition such as (some link? pattern) but this degrades
+  ;; performance more than just proceeding with the degenerate case and making
+  ;; sure we don't return empty colls after the fact.
+  (not-empty
+   (let [entity (db-get-ref context pattern lookup-ref)
+         context' (assoc context :entity entity)]
+     (reduce
+      (fn [result expr]
+        (parser context' result expr))
+      result pattern))))
 
 (defmethod parse-expr ::attr
   [{:keys [entity]} result k]
@@ -323,6 +342,14 @@
   [{:keys [entity]} result _]
   (merge result (apply dissoc entity (keys result))))
 
+(defmethod parse-expr ::link
+  [{:keys [parser db db-get-ref] :as context} result link-map]
+  (let [[[[k] pattern]] (seq link-map)]
+    (when-some [lookup-ref (db-get-ref context pattern k)]
+      (let [context' (assoc context :lookup-ref lookup-ref)
+            result' (parser context' result pattern)]
+        (assoc result k result')))))
+
 (defn default-get-ref
   [{:keys [db] :as context} _ lookup-ref]
   (get db lookup-ref))
@@ -343,6 +370,8 @@
            lookup refs. Expands each lookup ref to the entity it refers
            to, then applies pull to each of those entities using the
            sub-pattern."
+  ([db pattern]
+   (pull db pattern nil nil))
   ([db pattern lookup-ref]
    (pull db pattern lookup-ref nil))
   ([db pattern lookup-ref {:as   options
@@ -359,3 +388,31 @@
                   :lookup-ref lookup-ref}
          result  {}]
      (parser context result pattern))))
+
+(defn pull-link
+  "Like `pull` but uses `keyword` to find the lookup-ref from the `db` before
+  parsing the query. The lookup-ref will be obtained by invoking `(db-get-ref
+  context pattern keyword)`, which for `default-get-ref` means that the db
+  contains a lookup-ref as a value for `keyword`."
+  ([db pattern keyword]
+   (pull-link db pattern keyword nil))
+  ([db pattern keyword {:as   options
+                        :keys [parser
+                               db-ref?
+                               db-get-ref]
+                        :or   {parser     parse-expr
+                               db-ref?    ref?
+                               db-get-ref default-get-ref}}]
+   (letfn [(resolve-link
+             [{:keys [db db-get-ref] :as context} pattern keyword]
+             (assoc context :lookup-ref
+                    (db-get-ref context pattern keyword)))]
+     (let [context {:parser     parser
+                    :db         db
+                    :db-ref?    db-ref?
+                    :db-get-ref db-get-ref}
+           result  {}]
+
+       (-> context
+           (resolve-link pattern keyword)
+           (parser result pattern))))))
