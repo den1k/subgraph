@@ -1,4 +1,4 @@
-(ns com.stuartsierra.mapgraph-test
+(ns com.stuartsierra.subgraph-test
   (:require [clojure.spec :as s]
             [clojure.string :as str]
             [clojure.spec.gen :as gen]
