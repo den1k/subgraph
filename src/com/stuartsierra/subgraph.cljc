@@ -68,14 +68,14 @@
    {:pre [(not (interop/deref? db))]}
    (select-keys db [::mg/id-attrs])))
 
-(re-frame/reg-sub-raw
- ::pull
- (fn pull-sub
-   [db [_ pattern lookup-ref]]
-   {:pre [(interop/deref? db)]}
-   (interop/make-reaction
-    #(mg/pull
-      db pattern lookup-ref
-      {:parser     parse-expr
-       :db-ref?    ref?
-       :db-get-ref get-ref}))))
+(defn pull
+  [db [_ pattern lookup-ref]]
+  {:pre [(interop/deref? db)]}
+  (interop/make-reaction
+   #(mg/pull
+     db pattern lookup-ref
+     {:parser     parse-expr
+      :db-ref?    ref?
+      :db-get-ref get-ref})))
+
+(re-frame/reg-sub-raw ::pull pull)
