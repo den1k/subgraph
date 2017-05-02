@@ -98,15 +98,19 @@
                   [{[:link/user '_]
                     [:user/id :user/name {:foo '[*], :bar '[*]}]}])
          {:link/user
-          {:user/id 3
-           :user/name "Claire"}})))
+          {:user/id 3 :user/name "Claire"}}))
+  (is (= (mg/pull examples/friends
+                  [{[:link/users '_]
+                    [:user/id :user/name {:foo '[*], :bar '[*]}]}])
+         {:link/users
+          [{:user/id 2 :user/name "Bob"}
+           {:user/id 3 :user/name "Claire"}]})))
 
 (deftest t-pull-link
   (is (= (mg/pull-link examples/friends
                        [:user/id :user/name {:foo '[*], :bar '[*]}]
                        :link/user)
-         {:user/id 3
-          :user/name "Claire"})))
+         {:user/id 3 :user/name "Claire"})))
 
 ;;; Generative tests
 

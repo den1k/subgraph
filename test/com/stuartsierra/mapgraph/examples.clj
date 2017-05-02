@@ -44,7 +44,8 @@
               {:user/id 4
                :user/name "Frank"
                :user/friends #{{:user/id 1}}})
-      (assoc :link/user [:user/id 3])))
+      (assoc :link/user [:user/id 3])
+      (assoc :link/users [[:user/id 2] [:user/id 3]])))
 
 (def addresses
   (-> (mg/new-db)

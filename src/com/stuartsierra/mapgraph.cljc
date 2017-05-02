@@ -346,9 +346,11 @@
   [{:keys [parser db db-get-ref] :as context} result link-map]
   (let [[[[k] pattern]] (seq link-map)]
     (when-some [lookup-ref (db-get-ref context pattern k)]
-      (let [context' (assoc context :lookup-ref lookup-ref)
-            result' (parser context' result pattern)]
-        (assoc result k result')))))
+      ;; Recursively parse with a join-like context
+      (parser
+       (assoc-in context [:entity k] lookup-ref)
+       result
+       {k pattern}))))
 
 (defn default-get-ref
   [{:keys [db] :as context} _ lookup-ref]
