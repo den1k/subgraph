@@ -77,16 +77,3 @@
      {:parser     parse-expr
       :db-ref?    ref?
       :db-get-ref get-ref})))
-
-(defn pull-link
-  [db [_ pattern keyword]]
-  {:pre [(interop/deref? db)]}
-  (interop/make-reaction
-   #(mg/pull-link
-     db pattern keyword
-     {:parser     parse-expr
-      :db-ref?    ref?
-      :db-get-ref get-ref})))
-
-(re-frame/reg-sub-raw ::pull pull)
-(re-frame/reg-sub-raw ::pull-link pull-link)

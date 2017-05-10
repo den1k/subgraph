@@ -391,8 +391,10 @@
          result  {}]
      (parser context result pattern))))
 
-(defn pull-link
-  "Like `pull` but uses `keyword` to find the lookup-ref from the `db` before
+(defn ^:deprecated pull-link
+  "Deprecated - does not support links to colls, use the link syntax instead.
+
+  Like `pull` but uses `keyword` to find the lookup-ref from the `db` before
   parsing the query. The lookup-ref will be obtained by invoking `(db-get-ref
   context pattern keyword)`, which for `default-get-ref` means that the db
   contains a lookup-ref as a value for `keyword`."
