@@ -58,8 +58,7 @@
         (comp debug-computed-at parse)))
       (parse))))
 
-
-;; * Subscriptions
+;; * Internal subscriptions
 
 (re-frame/reg-sub
  ::id-attrs
@@ -68,12 +67,15 @@
    {:pre [(not (interop/deref? db))]}
    (select-keys db [::mg/id-attrs])))
 
+;; * API
+
 (defn pull
-  [db [_ pattern lookup-ref]]
-  {:pre [(interop/deref? db)]}
-  (interop/make-reaction
-   #(mg/pull
-     db pattern lookup-ref
-     {:parser     parse-expr
-      :db-ref?    ref?
-      :db-get-ref get-ref})))
+  ([db pattern] (pull db pattern nil))
+  ([db pattern lookup-ref]
+   {:pre [(interop/deref? db)]}
+   (interop/make-reaction
+    #(mg/pull
+      db pattern lookup-ref
+      {:parser     parse-expr
+       :db-ref?    ref?
+       :db-get-ref get-ref}))))
