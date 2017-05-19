@@ -47,6 +47,11 @@
       (assoc :link/user [:user/id 3])
       (assoc :link/users [[:user/id 2] [:user/id 3]])))
 
+(def friends-no-cycles
+  (-> friends
+      (update [:user/id 3] dissoc :user/friends)
+      (update [:user/id 4] dissoc :user/friends)))
+
 (def addresses
   (-> (mg/new-db)
       (mg/add-id-attr :user/id :address/id)

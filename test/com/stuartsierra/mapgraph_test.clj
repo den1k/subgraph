@@ -106,11 +106,29 @@
           [{:user/id 2 :user/name "Bob"}
            {:user/id 3 :user/name "Claire"}]})))
 
-(deftest t-pull-link
-  (is (= (mg/pull-link examples/friends
-                       [:user/id :user/name {:foo '[*], :bar '[*]}]
-                       :link/user)
-         {:user/id 3 :user/name "Claire"})))
+(deftest t-pull-rec-friend-names-depth-3
+  (is (= (mg/pull
+          examples/friends
+          '[:user/name {:user/friends 2}]
+          [:user/id 1])
+         {:user/name "Alice"
+          :user/friends
+          #{{:user/name "Claire"
+             :user/friends #{{:user/name "Alice"}}}
+            {:user/name "Bob"
+             :user/friends #{{:user/name "Emily"}
+                             {:user/name "Frank"}}}}})))
+
+(deftest t-pull-rec
+  (is (= (mg/pull
+          examples/friends-no-cycles
+          [:user/id :user/name {:user/friends 100}]
+          [:user/id 1])
+         (mg/pull
+          examples/friends-no-cycles
+          [:user/id :user/name {:user/friends '...}]
+          [:user/id 1]))))
+
 
 ;;; Generative tests
 

@@ -252,12 +252,14 @@
   "Returns an expression type."
   [expr]
   (cond
-    (vector? expr)  ::pattern
-    (keyword? expr) ::attr
-    (link? expr)    ::link
-    (map? expr)     ::join
-    (= '* expr)     ::*
-    :else           nil))
+    (= '* expr)         ::*
+    (vector? expr)      ::pattern
+    (keyword? expr)     ::attr
+    (link? expr)        ::link
+    (or (map? expr)
+        (= '... expr)
+        (number? expr)) ::join
+    :else               nil))
 
 (defmulti parse-expr
   (fn [_ _ expr]
@@ -296,7 +298,8 @@
   ;; sure we don't return empty colls after the fact.
   (not-empty
    (let [entity (db-get-ref context pattern lookup-ref)
-         context' (assoc context :entity entity)]
+         ;; rec joins need a reference to the outer pattern
+         context' (assoc context :entity entity :pattern pattern)]
      (reduce
       (fn [result expr]
         (parser context' result expr))
@@ -309,31 +312,53 @@
     result))
 
 (defmethod parse-expr ::join
-  [{:keys [parser db db-ref? entity] :as context} result pull-map]
-  (letfn [(parse-one [join-expr ref]
-            (let [join-context (assoc context :lookup-ref ref)]
-              (parser join-context {} join-expr)))
+  [{:keys [parser db db-ref? entity pattern] :as context} result pull-map]
+  (letfn [(dec-rec-pull-map [k m]
+            (assert (== 1 (count m)) "Join maps should have a single key")
+            ;; No-op for a map with a different key
+            (let [[[k' cnt]] (seq m)]
+              (if (= k k') {k (dec cnt)} m)))
+          (dec-rec-join-pattern [k pattern]
+            (mapv
+             (fn [expr]
+               (if (map? expr) (dec-rec-pull-map k expr) expr))
+             pattern))
+          (rec-join-expr [k join-expr]
+            ;; No-op for a simple pattern, recursive exprs will need to get
+            ;; their pattern from the context
+            (cond
+              (vector? join-expr) join-expr
+              (= '... join-expr) pattern
+              (pos? join-expr) (dec-rec-join-pattern k pattern)
+              :else nil))
+          (parse-one [pull-expr ref]
+            (parser
+             (assoc context :lookup-ref ref)
+             {} pull-expr))
           (parse-many [join-expr refs]
-            (keept (fn [ref] (parse-one join-expr ref)) refs))]
+            (keept #(parse-one join-expr %) refs))]
     (reduce-kv
      (fn [result k join-expr]
        (if-let [val (get entity k)]
-         (cond
-           (db-ref? db val)
-           (assoc result k (parse-one join-expr val))
+         (if-let [join-expr' (rec-join-expr k join-expr)]
+           (cond
+             (db-ref? db val)
+             (assoc result k (parse-one join-expr' val))
 
-           (coll? val)
-           (assoc result k (parse-many join-expr val))
+             (coll? val)
+             (assoc result k (parse-many join-expr' val))
 
-           :else
-           (throw
-            (ex-info
-             "pull map pattern must be to a lookup ref or a collection of lookup refs."
-             {:reason ::pull-join-not-ref
-              ::pull-map-pattern pull-map
-              ::entity entity
-              ::attribute k
-              ::value val})))
+             :else
+             (throw
+              (ex-info
+               "pull map pattern must be to a lookup ref or a collection of lookup refs."
+               {:reason ::pull-join-not-ref
+                ::pull-map-pattern pull-map
+                ::entity entity
+                ::attribute k
+                ::value val})))
+           ;; remove key at end of recursion
+           (dissoc result k))
          ;; no value for key
          result))
      result pull-map)))
@@ -353,7 +378,7 @@
        {k pattern}))))
 
 (defn default-get-ref
-  [{:keys [db] :as context} _ lookup-ref]
+  [{:keys [db]} _ lookup-ref]
   (get db lookup-ref))
 
 (defn pull

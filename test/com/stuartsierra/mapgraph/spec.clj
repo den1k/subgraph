@@ -55,10 +55,15 @@
 
 (s/def ::mg/link (s/tuple keyword? #{'_}))
 
+(s/def ::mg/join-pattern
+  (s/or :pattern ::mg/pattern
+        :rec-unbounded #{'...}
+        :rec-limit number?))
+
 (s/def ::mg/pattern
   (s/* (s/or :attr keyword?
              :star #{'*}
-             :join (s/map-of keyword? ::mg/pattern)
+             :join (s/map-of keyword? ::mg/join-pattern)
              :link (s/map-of ::mg/link ::mg/pattern))))
 
 (s/def ::mg/result (s/nilable map?))
