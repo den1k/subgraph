@@ -50,13 +50,6 @@
           {:user/id 3
            :user/name "Claire"}})))
 
-(deftest t-pull-link
-  (is (= (deref (re-frame/subscribe
-                 [::sg/pull-link
-                  [:user/id :user/name {:foo '[*], :bar '[*]}]
-                  :link/user]))
-         {:user/id 3
-          :user/name "Claire"})))
 ;; TODO Updates
 
 (re-frame/reg-event-db

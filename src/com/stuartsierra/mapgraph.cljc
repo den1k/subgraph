@@ -415,33 +415,3 @@
                   :lookup-ref lookup-ref}
          result  {}]
      (parser context result pattern))))
-
-(defn ^:deprecated pull-link
-  "Deprecated - does not support links to colls, use the link syntax instead.
-
-  Like `pull` but uses `keyword` to find the lookup-ref from the `db` before
-  parsing the query. The lookup-ref will be obtained by invoking `(db-get-ref
-  context pattern keyword)`, which for `default-get-ref` means that the db
-  contains a lookup-ref as a value for `keyword`."
-  ([db pattern keyword]
-   (pull-link db pattern keyword nil))
-  ([db pattern keyword {:as   options
-                        :keys [parser
-                               db-ref?
-                               db-get-ref]
-                        :or   {parser     parse-expr
-                               db-ref?    ref?
-                               db-get-ref default-get-ref}}]
-   (letfn [(resolve-link
-             [{:keys [db db-get-ref] :as context} pattern keyword]
-             (assoc context :lookup-ref
-                    (db-get-ref context pattern keyword)))]
-     (let [context {:parser     parser
-                    :db         db
-                    :db-ref?    db-ref?
-                    :db-get-ref db-get-ref}
-           result  {}]
-
-       (-> context
-           (resolve-link pattern keyword)
-           (parser result pattern))))))
