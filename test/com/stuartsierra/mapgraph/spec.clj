@@ -23,10 +23,10 @@
 ;; SOFTWARE.
 
 (ns com.stuartsierra.mapgraph.spec
-  "clojure.spec definitions for mapgraph functions.
+  "clojure.spec.alpha definitions for mapgraph functions.
   Requires Clojure 1.9.0."
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
             [re-frame.interop :as interop]
             [com.stuartsierra.mapgraph :as mg]
             [com.stuartsierra.subgraph :as sg]))
@@ -46,10 +46,10 @@
 
 (s/def ::mg/db (s/or :map ::map-db :reaction ::reaction-db))
 
-(s/def ::mg/entity (s/map-of keyword? ::s/any))
+(s/def ::mg/entity (s/map-of keyword? any?))
 
 (s/def ::mg/reference
-  (s/and vector? (s/tuple keyword? ::s/any)))
+  (s/and vector? (s/tuple keyword? any?)))
 
 (s/def ::mg/lookup-ref ::mg/reference)
 

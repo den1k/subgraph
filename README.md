@@ -41,7 +41,7 @@ in Clojure and ClojureScript
 MapGraph is written in `.cljc` and depends on Clojure or ClojureScript
 version 1.7.0 or higher.
 
-To run the tests you will need clojure.spec, available in Clojure
+To run the tests you will need clojure.spec.alpha, available in Clojure
 1.9.0-alpha5 or higher.
 
 

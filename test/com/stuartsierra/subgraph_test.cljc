@@ -1,7 +1,7 @@
 (ns com.stuartsierra.subgraph-test
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [clojure.spec.gen :as gen]
+            [clojure.spec.gen.alpha :as gen]
             [clojure.test :refer [deftest is use-fixtures]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.properties :as prop]
@@ -14,11 +14,14 @@
 
 (defn re-frame-db-fixture
   [f]
-  (re-frame/reg-event-db ::initialize-db (fn  [_ _] examples/friends))
+  (re-frame/reg-event-db ::initialize-db (fn [_ _] examples/friends))
   (re-frame/dispatch-sync [::initialize-db])
+  (re-frame/reg-sub-raw ::sg/pull (fn [db [_ pattern lookup-ref]]
+                                    (sg/pull db pattern lookup-ref)))
   (f))
 
-(use-fixtures :once re-frame-db-fixture)
+(use-fixtures :each re-frame-db-fixture)
+
 
 (deftest t-id-attrs-subscription
   (is (= {::mg/id-attrs #{:user/id}} (deref (re-frame/subscribe [::sg/id-attrs])))))
@@ -33,21 +36,21 @@
             [:user/name
              {:user/friends [:user/name
                              {:user/friends [:user/name]}]}]
-            [:user/id 1]]) )
+            [:user/id 1]]))
          {:user/name "Alice"
           :user/friends
-          #{{:user/name "Claire"
-             :user/friends #{{:user/name "Alice"}}}
-            {:user/name "Bob"
-             :user/friends #{{:user/name "Emily"}
-                             {:user/name "Frank"}}}}})))
+                     #{{:user/name    "Claire"
+                        :user/friends #{{:user/name "Alice"}}}
+                       {:user/name    "Bob"
+                        :user/friends #{{:user/name "Emily"}
+                                        {:user/name "Frank"}}}}})))
 (deftest t-pull-query-link
   (is (= (deref (re-frame/subscribe
                  [::sg/pull
                   [{[:link/user '_]
                     [:user/id :user/name {:foo '[*], :bar '[*]}]}]]))
          {:link/user
-          {:user/id 3
+          {:user/id   3
            :user/name "Claire"}})))
 
 ;; TODO Updates

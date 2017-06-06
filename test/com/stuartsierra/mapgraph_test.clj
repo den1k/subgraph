@@ -1,6 +1,7 @@
 (ns com.stuartsierra.mapgraph-test
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.test.alpha :as st]
+            [clojure.spec.gen.alpha :as gen]
             [clojure.test :refer [deftest is]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.properties :as prop]
@@ -8,7 +9,7 @@
             [com.stuartsierra.mapgraph.spec]
             [com.stuartsierra.mapgraph.examples :as examples]))
 
-(s/instrument-ns 'com.stuartsierra.mapgraph)
+(st/instrument 'com.stuartsierra.mapgraph)
 
 ;;; Example tests
 
@@ -201,7 +202,7 @@
 (s/def ::D (s/keys :req [::d-id]))
 (s/def ::c-id integer?)
 (s/def ::d-id integer?)
-(s/def ::ds (s/and (s/coll-of ::D [])
+(s/def ::ds (s/and (s/coll-of ::D :into [] :kind? vector?)
                    not-empty))
 
 (def ^:private coll-pred
@@ -230,7 +231,7 @@
 (s/def ::F (s/keys :req [::f-id]))
 (s/def ::e-id integer?)
 (s/def ::f-id integer?)
-(s/def ::fs (s/and (s/map-of ::s/any ::F)
+(s/def ::fs (s/and (s/map-of any? ::F)
                    not-empty))
 
 (defspec t-roundtrip-map 10
@@ -248,7 +249,9 @@
 (s/def ::H (s/keys :req [::h-id]))
 (s/def ::g-id integer?)
 (s/def ::h-id integer?)
-(s/def ::hs (s/and (s/coll-of (s/tuple string? ::H) (sorted-map))
+(s/def ::hs (s/and (s/coll-of (s/tuple string? ::H)
+                              :kind (every-pred map? sorted?)
+                              :into (sorted-map))
                    not-empty))
 
 (defspec t-roundtrip-sorted-map 10
