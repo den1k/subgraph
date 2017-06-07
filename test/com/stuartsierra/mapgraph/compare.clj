@@ -2,8 +2,8 @@
   "Tests and benchmarks comparing MapGraph with Datomic and
   Datascript."
   (:require
-   [clojure.spec :as s]
-   [clojure.spec.gen :as gen]
+   [clojure.spec.alpha :as s]
+   [clojure.spec.gen.alpha :as gen]
    [clojure.test.check.clojure-test :refer [defspec]]
    [clojure.test.check.generators :as tgen]
    [clojure.test.check.properties :as prop]
@@ -35,7 +35,7 @@
 ;; instead of ::Person to prevent infinite recursion in a generator.
 ;; Must be non-empty for the pull tests because MapGraph will store an
 ;; empty collection but Datomic and Datascript will not.
-(s/def ::friends (s/and (s/coll-of ::Friend #{})
+(s/def ::friends (s/and (s/coll-of ::Friend :into #{})
                         not-empty))
 
 ;; ::town-id spec is limited to a small range to increase the
@@ -208,7 +208,7 @@
 
 (s/def ::db-type #{:mapgraph :datomic :datascript})
 
-(s/def ::entities (s/coll-of map? []))
+(s/def ::entities (s/coll-of map? :into []))
 
 (s/def ::run-fn
   (s/fspec :args (s/cat)))
