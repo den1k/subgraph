@@ -1,4 +1,4 @@
-(ns com.stuartsierra.mapgraph.compare
+(ns vimsical.subgraph.compare
   "Tests and benchmarks comparing MapGraph with Datomic and
   Datascript."
   (:require

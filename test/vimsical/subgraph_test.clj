@@ -1,13 +1,13 @@
-(ns com.stuartsierra.mapgraph-test
+(ns vimsical.subgraph-test
   (:require [clojure.spec.alpha :as s]
-            [clojure.spec.test.alpha :as st]
             [clojure.spec.gen.alpha :as gen]
+            [clojure.spec.test.alpha :as st]
             [clojure.test :refer [deftest is]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.properties :as prop]
             [com.stuartsierra.mapgraph :as mg]
-            [com.stuartsierra.mapgraph.spec]
-            [com.stuartsierra.mapgraph.examples :as examples]))
+            [vimsical.subgraph.examples :as examples]
+            vimsical.subgraph.spec))
 
 (st/instrument 'com.stuartsierra.mapgraph)
 

@@ -1,7 +1,7 @@
-(ns com.stuartsierra.mapgraph.readme
+(ns vimsical.subgraph.readme
   "Examples used in documentation"
   (:require [com.stuartsierra.mapgraph :as mg]
-            [com.stuartsierra.mapgraph.examples :as examples]))
+            [vimsical.subgraph.examples :as examples]))
 
 (def db (atom (mg/new-db)))
 

@@ -22,15 +22,14 @@
 ;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-(ns com.stuartsierra.mapgraph.examples
+(ns vimsical.subgraph.examples
   "Sample data for documentation and tests."
-  (:require [clojure.pprint :refer [pprint]]
-            [com.stuartsierra.mapgraph :as mg]))
+  (:require [vimsical.subgraph :as sg]))
 
 (def friends
-  (-> (mg/new-db)
-      (mg/add-id-attr :user/id)
-      (mg/add {:user/id 1
+  (-> (sg/new-db)
+      (sg/add-id-attr :user/id)
+      (sg/add {:user/id 1
                :user/name "Alice"
                :user/friends #{{:user/id 2
                                 :user/name "Bob"
@@ -53,9 +52,9 @@
       (update [:user/id 4] dissoc :user/friends)))
 
 (def addresses
-  (-> (mg/new-db)
-      (mg/add-id-attr :user/id :address/id)
-      (mg/add {:user/id 1
+  (-> (sg/new-db)
+      (sg/add-id-attr :user/id :address/id)
+      (sg/add {:user/id 1
                :user/name "Alice"
                :user/addresses {"home" {:address/id 1
                                         :address/street "123 Home Lane"}
@@ -86,6 +85,6 @@
                       ["cache" "level2"] {:host/ip "10.10.1.5", :host/name "cache"}}})
 
 (def hosts
-  (-> (mg/new-db)
-      (mg/add-id-attr :host/ip)
-      (mg/add sample-host)))
+  (-> (sg/new-db)
+      (sg/add-id-attr :host/ip)
+      (sg/add sample-host)))

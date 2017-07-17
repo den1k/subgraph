@@ -22,87 +22,85 @@
 ;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-(ns com.stuartsierra.mapgraph.spec
+(ns vimsical.subgraph.spec
   "clojure.spec.alpha definitions for mapgraph functions.
   Requires Clojure 1.9.0."
   (:require [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen]
             [re-frame.interop :as interop]
-            [com.stuartsierra.mapgraph :as mg]
-            [com.stuartsierra.subgraph :as sg]))
+            [vimsical.subgraph :as sg]))
 
-(s/def ::map-db mg/db?)
+(s/def ::map-db sg/db?)
 
 (s/def ::reaction-db
   (fn [db]
     (and
      (interop/deref? db)
-     (some-> db deref mg/db?))))
+     (some-> db deref sg/db?))))
 
 (defn get-conformed-db [{[k val] :db :as conformed}]
   (case k
     :map      val
     :reaction (some-> val deref)) )
 
-(s/def ::mg/db (s/or :map ::map-db :reaction ::reaction-db))
+(s/def ::sg/db (s/or :map ::map-db :reaction ::reaction-db))
 
-(s/def ::mg/entity (s/map-of keyword? any?))
+(s/def ::sg/entity (s/map-of keyword? any?))
 
-(s/def ::mg/reference
+(s/def ::sg/reference
   (s/and vector? (s/tuple keyword? any?)))
 
-(s/def ::mg/lookup-ref ::mg/reference)
+(s/def ::sg/lookup-ref ::sg/reference)
 
-(s/def ::mg/link (s/tuple keyword? #{'_}))
+(s/def ::sg/link (s/tuple keyword? #{'_}))
 
-(s/def ::mg/join-pattern
-  (s/or :pattern ::mg/pattern
+(s/def ::sg/join-pattern
+  (s/or :pattern ::sg/pattern
         :rec-unbounded #{'...}
         :rec-limit number?))
 
-(s/def ::mg/pattern
+(s/def ::sg/pattern
   (s/* (s/or :attr keyword?
              :star #{'*}
-             :join (s/map-of keyword? ::mg/join-pattern)
-             :link (s/map-of ::mg/link ::mg/pattern))))
+             :join (s/map-of keyword? ::sg/join-pattern)
+             :link (s/map-of ::sg/link ::sg/pattern))))
 
-(s/def ::mg/result (s/nilable map?))
+(s/def ::sg/result (s/nilable map?))
 
-(s/def ::mg/parser-context
-  (s/keys :req-un [::mg/parser ::mg/db ::mg/lookup-ref]
-          :opt-un [::mg/pattern ::mg/entity]))
+(s/def ::sg/parser-context
+  (s/keys :req-un [::sg/parser ::sg/db ::sg/lookup-ref]
+          :opt-un [::sg/pattern ::sg/entity]))
 
-(s/fdef mg/add-id-attr
-  :args (s/cat :db ::mg/db
+(s/fdef sg/add-id-attr
+  :args (s/cat :db ::sg/db
                :idents (s/* keyword?))
-  :ret ::mg/db)
+  :ret ::sg/db)
 
-(s/fdef mg/add
-  :args (s/& (s/cat :db ::mg/db
-                    :entities (s/* ::mg/entity))
+(s/fdef sg/add
+  :args (s/& (s/cat :db ::sg/db
+                    :entities (s/* ::sg/entity))
              (fn [{:keys [entities] :as conformed}]
                (let [db (get-conformed-db conformed)]
-                 (every? #(mg/entity? db %) entities))))
-  :ret ::mg/db
+                 (every? #(sg/entity? db %) entities))))
+  :ret ::sg/db
   :fn (fn [{:keys [ret args]}]
         (let [{:keys [entities] :as conformed} args]
           (let [db (get-conformed-db conformed)]
-            (every? #(contains? ret (mg/ref-to db %)) entities)))))
+            (every? #(contains? ret (sg/ref-to db %)) entities)))))
 
-(s/fdef mg/pull
+(s/fdef sg/pull
   :args (s/or
-         :link (s/cat :db ::mg/db
-                      :pattern (s/spec ::mg/pattern))
+         :link (s/cat :db ::sg/db
+                      :pattern (s/spec ::sg/pattern))
          :default (s/&
-                   (s/cat :db ::mg/db
-                          :pattern (s/spec ::mg/pattern)
-                          :ref ::mg/reference)
+                   (s/cat :db ::sg/db
+                          :pattern (s/spec ::sg/pattern)
+                          :ref ::sg/reference)
                    (fn [{:keys [ref] :as conformed}]
-                     (mg/ref? (get-conformed-db conformed) ref)))
-         :pull (s/cat :db ::mg/db
-                      :pattern (s/spec ::mg/pattern)
-                      :ref (s/nilable ::mg/reference)
-                      :context (s/nilable ::mg/parser-context)))
+                     (sg/ref? (get-conformed-db conformed) ref)))
+         :pull (s/cat :db ::sg/db
+                      :pattern (s/spec ::sg/pattern)
+                      :ref (s/nilable ::sg/reference)
+                      :context (s/nilable ::sg/parser-context)))
   :ret (s/nilable map?))
 
 ;; Local Variables:

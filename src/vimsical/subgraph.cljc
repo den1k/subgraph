@@ -22,7 +22,7 @@
 ;; CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-(ns com.stuartsierra.mapgraph
+(ns vimsical.subgraph
   "An in-memory graph data store consisting of maps with links.
 
   ## Introduction
@@ -277,17 +277,6 @@
 
 (defmethod parse-expr ::pattern
   [{:keys [parser db db-get-ref lookup-ref] :as context} result pattern]
-  (let [entity (db-get-ref context pattern lookup-ref)
-        links-in-pattern? (some link? pattern)]
-    (when (or (some? entity) links-in-pattern?)
-      (let [context' (assoc context :entity entity)]
-        (reduce
-         (fn [result expr]
-           (parser context' result expr))
-         result pattern)))))
-
-(defmethod parse-expr ::pattern
-  [{:keys [parser db db-get-ref lookup-ref] :as context} result pattern]
   ;; We have two conflicting implementation details here: 1. links require that
   ;; we parse the pattern even when no lookup-ref is providied (that is their
   ;; whole purpose) 2. We should return nil in the case where the pattern
@@ -317,7 +306,7 @@
             (assert (== 1 (count m)) "Join maps should have a single key")
             ;; No-op for a map with a different key
             (let [[[k' cnt]] (seq m)]
-              (if (= k k') {k (dec cnt)} m)))
+              (if (= k k') {k (dec ^long cnt)} m)))
           (dec-rec-join-pattern [k pattern]
             (mapv
              (fn [expr]
@@ -329,7 +318,9 @@
             (cond
               (vector? join-expr) join-expr
               (= '... join-expr) pattern
-              (pos? join-expr) (dec-rec-join-pattern k pattern)
+              (and (number? join-expr)
+                   (pos? ^long join-expr))
+              (dec-rec-join-pattern k pattern)
               :else nil))
           (parse-one [pull-expr ref]
             (parser
