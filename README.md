@@ -1,33 +1,30 @@
-# MapGraph
+# SubGraph
 
-A basic in-memory database for storing linked maps
-in Clojure and ClojureScript
+> Reactive graph database for re-frame
 
 
 
 ## Releases and Dependency Information
 
-* I publish releases to [Clojars]
+* Latest stable release is [0.1.0](https://github.com/vimsical/subgraph/tree/0.1.0)
 
-* Latest stable release is [0.2.1](https://github.com/stuartsierra/mapgraph/tree/0.2.1)
-
-* [All releases](https://clojars.org/com.stuartsierra/mapgraph)
+* [All releases](https://clojars.org/vimsical/subgraph)
 
 [Leiningen] dependency information:
 
-    [com.stuartsierra/mapgraph "0.2.1"]
+    [vimsical/subgraph "0.1.0"]
 
 [Maven] dependency information:
 
     <dependency>
-      <groupId>com.stuartsierra</groupId>
-      <artifactId>mapgraph</artifactId>
-      <version>0.2.1</version>
+      <groupId>vimsical</groupId>
+      <artifactId>subgraph</artifactId>
+      <version>0.1.0</version>
     </dependency>
 
 [Gradle] dependency information:
 
-    compile "com.stuartsierra:mapgraph:0.2.1"
+    compile "vimsical:subgraph:1.0.0"
 
 [Clojars]: http://clojars.org/
 [Leiningen]: http://leiningen.org/
@@ -38,17 +35,17 @@ in Clojure and ClojureScript
 
 ## Dependencies and Compatibility
 
-MapGraph is written in `.cljc` and depends on Clojure or ClojureScript
+SubGraph is written in `.cljc` and depends on Clojure or ClojureScript
 version 1.7.0 or higher.
 
 To run the tests you will need clojure.spec.alpha, available in Clojure
-1.9.0-alpha5 or higher.
+1.9.0-alpha17 or higher.
 
 
 
 ## Discussion
 
-Please post questions on the [Clojure Mailing List](https://groups.google.com/forum/#!forum/clojure)
+Please post questions and issues to the Github issues system.
 
 
 
@@ -59,7 +56,7 @@ Please post questions on the [Clojure Mailing List](https://groups.google.com/fo
   (:require [com.stuartsierra.mapgraph :as mg]))
 ```
 
-Create a new MapGraph database with `new-db`. You will probably want
+Create a new Subgraph database with `new-db`. You will probably want
 to store it in a mutable reference such as an Atom.
 
 ```clojure
@@ -266,13 +263,13 @@ Collections may not mix entities and non-entities.
 
 ## Comparison with Datomic/Datascript
 
-MapGraph is designed to be used as a temporary store for data kept in
+Subgraph is designed to be used as a temporary store for data kept in
 [Datomic] or [Datascript].
 
 [Datomic]: http://www.datomic.com/
 [Datascript]: https://github.com/tonsky/datascript
 
-MapGraph is different from Datomic/Datascript in the following ways:
+Subgraph is different from Datomic/Datascript in the following ways:
 
 * Schema only specifies unique identity attributes
 

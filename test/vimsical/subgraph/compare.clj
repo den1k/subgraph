@@ -8,8 +8,8 @@
    [clojure.test.check.generators :as tgen]
    [clojure.test.check.properties :as prop]
    [clojure.walk :as walk]
-   [com.stuartsierra.mapgraph :as mg]
-   [com.stuartsierra.mapgraph.spec :as mg.spec]
+   [vimsical.subgraph :as sg]
+   [vimsical.subgraph.spec :as sg.spec]
    [criterium.core :as crit]
    [datascript.core :as datascript]
    [datomic.api :as datomic]))
@@ -93,7 +93,7 @@
 (defn new-mapgraph-db
   "Returns a new map graph database with the test schema."
   []
-  (mg/add-id-attr (mg/new-db) ::person-id ::town-id))
+  (sg/add-id-attr (sg/new-db) ::person-id ::town-id))
 
 (defn new-datomic-db
   "Returns a new Datomic database with the test schema."
@@ -148,7 +148,7 @@
   new-dbs."
   [dbs entities]
   (let [{:keys [mapgraph datomic datascript]} dbs
-        mapgraph (apply mg/add mapgraph entities)
+        mapgraph (apply sg/add mapgraph entities)
         datomic (:db-after
                  (datomic/with
                   datomic
@@ -165,7 +165,7 @@
   "Pulls the same entity from each database in the dbs map."
   [dbs pull-expr lookup-ref]
   (-> dbs
-      (update :mapgraph mg/pull pull-expr lookup-ref)
+      (update :mapgraph sg/pull pull-expr lookup-ref)
       (update :datomic (fn [db]
                          (-> (datomic/pull db pull-expr lookup-ref)
                              vecs->sets
@@ -230,7 +230,7 @@
          datomic-entities (add-tempids entities datomic/tempid)
          datascript-entities (add-tempids entities datascript/tempid)]
      {:mapgraph (bench-fn :mapgraph
-                          #(apply mg/add mapgraph entities))
+                          #(apply sg/add mapgraph entities))
       :datomic (bench-fn :datomic
                          #(datomic/with datomic datomic-entities))
       :datascript (bench-fn :datascript
@@ -240,8 +240,8 @@
         :args (s/? (s/cat :f ::bench-fn
                           :dbs ::databases-by-type
                           :entities ::entities
-                          :pull-expr ::mg.spec/pull-pattern
-                          :lookup-ref ::mg.spec/reference)))
+                          :pull-expr ::sg.spec/pull-pattern
+                          :lookup-ref ::sg.spec/reference)))
 
 (defn bench-pull
   "Runs a benchmark for pulling entities from a database."
@@ -255,7 +255,7 @@
   ([bench-fn dbs entities pull-expr lookup-ref]
    (let [{:keys [mapgraph datomic datascript]} (insert-all dbs entities)]
      {:mapgraph (bench-fn :mapgraph
-                          #(mg/pull mapgraph pull-expr lookup-ref))
+                          #(sg/pull mapgraph pull-expr lookup-ref))
       :datomic (bench-fn :datomic
                          #(datomic/pull datomic pull-expr lookup-ref))
       :datascript (bench-fn :datascript

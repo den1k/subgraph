@@ -5,16 +5,16 @@
             [clojure.test :refer [deftest is]]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.properties :as prop]
-            [com.stuartsierra.mapgraph :as mg]
+            [vimsical.subgraph :as sg]
             [vimsical.subgraph.examples :as examples]
             vimsical.subgraph.spec))
 
-(st/instrument 'com.stuartsierra.mapgraph)
+(st/instrument 'vimsical.subgraph)
 
 ;;; Example tests
 
 (deftest t-pull-friend-names-depth-3
-  (is (= (mg/pull
+  (is (= (sg/pull
           examples/friends
           '[:user/name
             {:user/friends [:user/name
@@ -29,7 +29,7 @@
                              {:user/name "Frank"}}}}})))
 
 (deftest t-pull-entities-in-map
-  (is (= (mg/pull examples/addresses
+  (is (= (sg/pull examples/addresses
                   [:user/name
                    {:user/addresses [:address/street]}]
                   [:user/id 1])
@@ -39,7 +39,7 @@
            "work" {:address/street "456 Corporate Street"}}})))
 
 (deftest t-pull-map-with-complex-keys
-  (is (= (mg/pull examples/hosts
+  (is (= (sg/pull examples/hosts
                   [:host/ip
                    :host/rules
                    {:host/connections [:host/name]}]
@@ -53,7 +53,7 @@
            ["cache" "level2"] {:host/name "cache"}}})))
 
 (deftest t-pull-star
-  (is (= (mg/pull examples/friends
+  (is (= (sg/pull examples/friends
                   '[*]
                   [:user/id 3])
          {:user/id 3
@@ -63,7 +63,7 @@
 (deftest t-pull-star-after-join
   ;; star in pull expression should not replace nested entities joined
   ;; elsewhere in the pull expression.
-  (is (= (mg/pull examples/friends
+  (is (= (sg/pull examples/friends
                   '[{:user/friends [:user/name]}
                     *]
                   [:user/id 3])
@@ -72,7 +72,7 @@
           :user/friends #{{:user/name "Alice"}}})))
 
 (deftest t-pull-broken-ref
-  (is (= (mg/pull (dissoc examples/friends [:user/id 1])
+  (is (= (sg/pull (dissoc examples/friends [:user/id 1])
                   '[{:user/friends [:user/name]}
                     *]
                   [:user/id 3])
@@ -81,26 +81,26 @@
           :user/friends #{}})))
 
 (deftest t-do-not-pull-simple-keys-not-in-entity
-  (is (= (mg/pull examples/friends
+  (is (= (sg/pull examples/friends
                   [:user/id :user/name :foo :bar]
                   [:user/id 3])
          {:user/id 3
           :user/name "Claire"})))
 
 (deftest t-do-not-pull-ref-keys-not-in-entity
-  (is (= (mg/pull examples/friends
+  (is (= (sg/pull examples/friends
                   [:user/id :user/name {:foo '[*], :bar '[*]}]
                   [:user/id 3])
          {:user/id 3
           :user/name "Claire"})))
 
 (deftest t-pull-query-link
-  (is (= (mg/pull examples/friends
+  (is (= (sg/pull examples/friends
                   [{[:link/user '_]
                     [:user/id :user/name {:foo '[*], :bar '[*]}]}])
          {:link/user
           {:user/id 3 :user/name "Claire"}}))
-  (is (= (mg/pull examples/friends
+  (is (= (sg/pull examples/friends
                   [{[:link/users '_]
                     [:user/id :user/name {:foo '[*], :bar '[*]}]}])
          {:link/users
@@ -108,7 +108,7 @@
            {:user/id 3 :user/name "Claire"}]})))
 
 (deftest t-pull-rec-friend-names-depth-3
-  (is (= (mg/pull
+  (is (= (sg/pull
           examples/friends
           '[:user/name {:user/friends 2}]
           [:user/id 1])
@@ -121,11 +121,11 @@
                              {:user/name "Frank"}}}}})))
 
 (deftest t-pull-rec
-  (is (= (mg/pull
+  (is (= (sg/pull
           examples/friends-no-cycles
           [:user/id :user/name {:user/friends 100}]
           [:user/id 1])
-         (mg/pull
+         (sg/pull
           examples/friends-no-cycles
           [:user/id :user/name {:user/friends '...}]
           [:user/id 1]))))
@@ -136,23 +136,23 @@
 (defspec t-roundtrip-pull-star 10
   ;; An entity map with no nested entities, pulled with [*], should
   ;; equal the original map.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr :thing/id))]
-    (prop/for-all [e (s/gen ::mg/entity)]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr :thing/id))]
+    (prop/for-all [e (s/gen ::sg/entity)]
       (let [entity (assoc e :thing/id 1)
-            new-db (mg/add db entity)]
+            new-db (sg/add db entity)]
         (= entity
-           (mg/pull new-db '[*] [:thing/id 1]))))))
+           (sg/pull new-db '[*] [:thing/id 1]))))))
 
 (defspec t-merge-same-id 10
   ;; Entity maps with the same ID should be merged in order.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr :thing/id))]
-    (prop/for-all [es (gen/vector (s/gen ::mg/entity) 2 10)]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr :thing/id))]
+    (prop/for-all [es (gen/vector (s/gen ::sg/entity) 2 10)]
       (let [entities (map #(assoc % :thing/id 1) es)
-            new-db (apply mg/add db entities)]
+            new-db (apply sg/add db entities)]
         (= (apply merge entities)
-           (mg/pull new-db '[*] [:thing/id 1]))))))
+           (sg/pull new-db '[*] [:thing/id 1]))))))
 
 ;; entity specs used for the following tests
 (s/def ::A (s/keys :req [::a-id] :opt [::b-ref]))
@@ -164,35 +164,35 @@
 
 (defspec t-replace-lookup-refs 100
   ;; Nested entity maps are replaced with lookup refs.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr ::a-id ::b-id))]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr ::a-id ::b-id))]
     (prop/for-all [as (gen/vector (s/gen ::A) 1 10)
                    a-id (s/gen ::a-id)]
-      (let [new-db (apply mg/add db as)]
-        (s/valid? (s/nilable ::mg/reference)
+      (let [new-db (apply sg/add db as)]
+        (s/valid? (s/nilable ::sg/reference)
                   (::b-ref (get new-db [::a-id a-id])))))))
 
 (defspec t-removed-entity-pull-is-nil 100
   ;; An entity dissoc'd from top level should return nil from a pull.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr ::a-id ::b-id))]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr ::a-id ::b-id))]
     (prop/for-all [as (gen/vector (s/gen ::A) 1 10)
                    a-id (s/gen ::a-id)
                    to-remove (s/gen ::a-id)]
-      (let [new-db (dissoc (apply mg/add db as) [::a-id to-remove])]
-        (nil? (mg/pull new-db '[*] [::a-id to-remove]))))))
+      (let [new-db (dissoc (apply sg/add db as) [::a-id to-remove])]
+        (nil? (sg/pull new-db '[*] [::a-id to-remove]))))))
 
 (defspec t-do-not-pull-removed-references 100
   ;; An entity dissoc'd from top level should not be returned from a
   ;; nested reference in a pull.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr ::a-id ::b-id))]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr ::a-id ::b-id))]
     (prop/for-all [as (gen/vector (s/gen ::A) 1 10)
                    a-id (s/gen ::a-id)
                    to-remove (s/gen ::b-id)]
-      (let [new-db (dissoc (apply mg/add db as) [::b-id to-remove])]
+      (let [new-db (dissoc (apply sg/add db as) [::b-id to-remove])]
         (not= to-remove
-              (get-in (mg/pull new-db
+              (get-in (sg/pull new-db
                                [{::b-ref [::b-id]}]
                                [::a-id a-id])
                       [::b-ref ::b-id]))))))
@@ -218,13 +218,13 @@
 (defspec t-roundtrip-ref-coll 100
   ;; Preserve the type (seq, vector, set, sorted set) of collections
   ;; of lookup refs.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr ::c-id ::d-id))]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr ::c-id ::d-id))]
     (prop/for-all [c (s/gen ::C)
                    [coll-fn pred] (gen/elements coll-pred)]
       (let [c (update c ::ds coll-fn)
-            new-db (mg/add db c)]
-        (pred (::ds (mg/pull new-db '[::ds] [::c-id (::c-id c)])))))))
+            new-db (sg/add db c)]
+        (pred (::ds (sg/pull new-db '[::ds] [::c-id (::c-id c)])))))))
 
 ;; entity specs used for the following tests
 (s/def ::E (s/keys :req [::e-id ::fs]))
@@ -236,11 +236,11 @@
 
 (defspec t-roundtrip-map 10
   ;; Round trip a map of lookup refs, any key type.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr ::e-id ::f-id))]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr ::e-id ::f-id))]
     (prop/for-all [e (s/gen ::E)]
-      (let [new-db (mg/add db e)]
-        (= e (mg/pull new-db
+      (let [new-db (sg/add db e)]
+        (= e (sg/pull new-db
                       [::e-id {::fs [::f-id]}]
                       [::e-id (::e-id e)]))))))
 
@@ -256,11 +256,11 @@
 
 (defspec t-roundtrip-sorted-map 10
   ;; Sorted map of lookup refs preserves its sorted-ness.
-  (let [db (-> (mg/new-db)
-               (mg/add-id-attr ::g-id ::h-id))]
+  (let [db (-> (sg/new-db)
+               (sg/add-id-attr ::g-id ::h-id))]
     (prop/for-all [g (s/gen ::G)]
-      (let [new-db (mg/add db g)]
-        (sorted? (::hs (mg/pull new-db
+      (let [new-db (sg/add db g)]
+        (sorted? (::hs (sg/pull new-db
                                 [::g-id {::hs [::h-id]}]
                                 [::g-id (::g-id g)])))))))
 

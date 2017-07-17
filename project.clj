@@ -1,6 +1,6 @@
-(defproject com.stuartsierra/mapgraph "0.2.2-SNAPSHOT"
+(defproject vimsical/subgraph "0.1.0-SNAPSHOT"
   :description "Basic in-memory graph database of maps with links"
-  :url "https://github.com/stuartsierra/mapgraph"
+  :url "https://github.com/vimsical/subgraph"
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.8.0"]
