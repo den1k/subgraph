@@ -332,7 +332,10 @@ not officially supported by Cognitect, Inc.
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Stuart Sierra
+Copyright (c) 2016 Stuart Sierra as part of the MapGraph project
+(https://github.com/stuartsierra/mapgraph)
+
+Copyright (c) 2017 Vimsical
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
