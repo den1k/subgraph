@@ -41,12 +41,15 @@
 
 ;; * API
 
-(defn raw-sub-handler
-  [db [_ pattern lookup-ref]]
+(defn pull
+  [db pattern lookup-ref]
   {:pre [(interop/deref? db)]}
-  (println pattern lookup-ref)
   (interop/make-reaction
    #(sg/pull db pattern lookup-ref
              {:parser     parser
               :db-ref?    ref?
               :db-get-ref get-ref})))
+
+(defn raw-sub-handler
+  [db [_ pattern lookup-ref]]
+  (pull db pattern lookup-ref))
