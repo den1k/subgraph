@@ -1,5 +1,5 @@
 (defproject vimsical/subgraph "0.1.0-SNAPSHOT"
-  :description "Basic in-memory graph database of maps with links"
+  :description "Reactive graph database for re-frame"
   :url "https://github.com/vimsical/subgraph"
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"}
