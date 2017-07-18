@@ -2,7 +2,7 @@
 
 > Reactive graph database for re-frame
 
-[![CircleCI](https://circleci.com/gh/vimsical/subgraph.svg?style=svg)](https://circleci.com/gh/vimsical/subgraph)
+[![CircleCI](https://circleci.com/gh/vimsical/subgraph.svg?style=shield&circle-token=60839af806151dc02bcd591d9ec9a26875d0820b)](https://circleci.com/gh/vimsical/subgraph)
 
 ## Releases and Dependency Information
 
@@ -37,9 +37,7 @@
 
 SubGraph is written in `.cljc` and depends on Clojure or ClojureScript version 1.8.0 or higher.
 
-To run the tests you will need clojure.spec.alpha, available in Clojure 1.9.0-alpha17 or higher.
-
-`re-frame` and `reagent` are provided dependencies and will need to be included in your own project's depencies.
+`re-frame` and `reagent` are provided dependencies and will need to be included in your own project's dependencies.
 
 
 
@@ -285,7 +283,7 @@ SubGraph supports this pattern with a special query syntax identical to that of 
 
 ## Comparison with Datomic/Datascript
 
-Refer to [MapGraph's comparison](https://github.com/stuartsierra/mapgraph#comparison-with-datomicdatascript)
+Refer to the comparison in the [MapGraph Repo](https://github.com/stuartsierra/mapgraph#comparison-with-datomicdatascript)
 
 
 
@@ -297,7 +295,7 @@ Please file issues on GitHub with minimal sample code that demonstrates the prob
 
 ## Contributing
 
-Pull request are welcome!
+Pull requests are welcome!
 
 
 
@@ -305,33 +303,3 @@ Pull request are welcome!
 
 [Stuart Sierra](https://github.com/stuartsierra/mapgraph) for MapGraph
 [David Nolen](https://github.com/swannodette) for ClojureScript and om.next
-
-
-
-## Copyright and License
-
-The MIT License (MIT)
-
-Copyright (c) 2016 Stuart Sierra as part of the MapGraph project
-(https://github.com/stuartsierra/mapgraph)
-
-Copyright (c) 2017 Vimsical
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
