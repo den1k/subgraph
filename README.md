@@ -2,7 +2,7 @@
 
 > Reactive graph database for re-frame
 
-
+[![CircleCI](https://circleci.com/gh/vimsical/subgraph.svg?style=svg)](https://circleci.com/gh/vimsical/subgraph)
 
 ## Releases and Dependency Information
 
