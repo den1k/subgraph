@@ -1,111 +1,88 @@
 (ns vimsical.subgraph.readme
   "Examples used in documentation"
-  (:require [com.stuartsierra.mapgraph :as mg]
-            [vimsical.subgraph.examples :as examples]))
+  (:require
+   [re-frame.core :as re-frame]
+   [vimsical.subgraph :as sg]
+   [vimsical.subgraph.re-frame :as sg.re-frame]
+   [vimsical.subgraph.examples :as examples]))
 
-(def db (atom (mg/new-db)))
 
-(swap! db mg/add-id-attr :user/id :color/hex)
+(defn new-db
+  []
+  (-> (sg/new-db)
+      (sg/add-id-attr :user/id :color/hex)))
 
-(swap! db mg/add
-       {:user/id 1
-        :user/name "Pat"
-        :user/favorite-color {:color/hex "9C27B0"
-                              :color/name "Purple"}}
+(re-frame/reg-event-db ::new-db (constantly (new-db)))
 
-       {:user/id 2
-        :user/name "Reese"
-        :user/favorite-color {:color/hex "D50000"
-                              :color/name "Red"}})
+(re-frame/dispatch [::new-db])
 
-(get @db [:user/id 2])
-;;=> {:user/id 2,
-;;    :user/name "Reese",
-;;    :user/favorite-color [:color/hex "D50000"]}
+(re-frame/reg-sub-raw ::q sg.re-frame/raw-sub-handler)
 
-(mg/pull @db
-         [:user/name {:user/favorite-color [:color/name]}]
-         [:user/id 2])
-;;=> {:user/name "Reese",
-;;    :user/favorite-color {:color/name "Red"}}
+(deref
+ (re-frame/subscribe
+  [::q
+   ;; Pattern
+   [:user/name {:user/favorite-color [:color/name]}]
+   ;; Lookup ref
+   [:user/id 2]]))
 
-(swap! db
-       mg/add
-       {:user/id 1
-        :user/profession "Programmer"})
+(re-frame/reg-event-db
+ ::add
+ (fn [db [_ & entities]]
+   (apply sg/add db entities)))
 
-(mg/pull @db
-         [:user/id :user/name :user/profession]
-         [:user/id 1])
-;; {:user/id 1,
-;;  :user/name "Pat",
-;;  :user/profession "Programmer"}
 
-(swap! db
-       mg/add
-       {:user/id 1
-        :user/friends #{{:user/id 2}}}
-       {:user/id 2
-        :user/friends #{{:user/id 1}}})
+(re-frame/dispatch
+ [::add
+  {:user/id             1
+   :user/name           "Pat"
+   :user/favorite-color {:color/hex  "9C27B0"
+                         :color/name "Purple"}}
+  {:user/id             2
+   :user/name           "Reese"
+   :user/favorite-color {:color/hex  "D50000"
+                         :color/name "Red"}}])
 
-(mg/pull @db
-         [:user/name
-          {:user/friends [:user/name
-                          {:user/friends [:user/name]}]}]
-         [:user/id 1])
-;;=> {:user/name "Pat",
-;;    :user/friends #{{:user/name "Reese",
-;;                     :user/friends #{{:user/name "Pat"}}}}}
+(deref
+ (re-frame/subscribe
+  [::q
+   ;; Pattern
+   [:user/name {:user/favorite-color [:color/name]}]
+   ;; Lookup ref
+   [:user/id 2]]))
 
-(swap! db dissoc [:user/id 2])
 
-(mg/pull @db '[*] [:user/id 2])
-;;=> nil
+(re-frame/dispatch
+ [::add
+  {:user/id 1 :user/friends #{{:user/id 2}}}
+  {:user/id 2 :user/friends #{{:user/id 1}}}])
 
-(mg/pull @db
-         [:user/name
-          {:user/friends [:user/name]}]
-         [:user/id 1])
-;;=> {:user/name "Pat",
-;;    :user/friends #{}}
+(deref
+ (re-frame/subscribe
+  [::q
+   [:user/name
+    {:user/friends
+     [:user/name :user/favorite-color]}]
+   [:user/id 1]]))
 
-(swap! db mg/add
-       {:user/id 1
-        :user/favorite-sports '(hockey tennis golf)})
+(deref
+ (re-frame/subscribe
+  [::q
+   [:user/name
+    {:user/friends
+     [:user/name {:user/favorite-color [:color/name]}]}]
+   [:user/id 1]]))
 
-(mg/pull @db
-         [:user/name :user/favorite-sports]
-         [:user/id 1])
-;;=> {:user/name "Pat", :user/favorite-sports (hockey tennis golf)}
+(re-frame/dispatch
+ [::add
+  {:user/id             2
+   :user/favorite-color {:color/hex  "1789d6"
+                         :color/name "DodgerBlue3"}}])
 
-(swap! db mg/add
-       {:user/id 1
-        :user/favorite-sports '(tennis polo)})
-
-(mg/pull @db
-         [:user/name :user/favorite-sports]
-         [:user/id 1])
-;;=> {:user/name "Pat", :user/favorite-sports (tennis polo)}
-
-(mg/pull examples/hosts
-         [:host/ip
-          :host/rules
-          {:host/gateway [:host/ip]
-           :host/peers [:host/ip]
-           :host/connections [:host/name]}]
-         [:host/ip "10.10.1.1"])
-;;=> {:host/ip "10.10.1.1",
-;;    :host/rules {"input" {"block" "*", "allow" 80},
-;;                 "output" {"allow" 80}},
-;;    :host/gateway {:host/ip "10.10.10.1"},
-;;    :host/peers #{{:host/ip "10.10.1.3"}
-;;                  {:host/ip "10.10.1.2"}},
-;;    :host/connections {"database" {:host/name "db"},
-;;                       ["cache" "level2"] {:host/name "cache"}}}
-
-(try (swap! db mg/add {:user/id 3 :user/friends [{:user/id 1} "Bob"]})
-     (catch Throwable t t))
-;; #error
-;; {:reason ::mg/mixed-collection,
-;;  ::mg/attribute :user/friends,
-;;  ::mg/value [{:user/id 1} "Bob"]}
+(deref
+ (re-frame/subscribe
+  [::q
+   [:user/name
+    {:user/friends
+     [:user/name {:user/favorite-color [:color/name]}]}]
+   [:user/id 1]]))

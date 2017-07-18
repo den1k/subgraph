@@ -24,7 +24,7 @@
 
 [Gradle] dependency information:
 
-    compile "vimsical:subgraph:1.0.0"
+    compile "vimsical:subgraph:0.1.0"
 
 [Clojars]: http://clojars.org/
 [Leiningen]: http://leiningen.org/
@@ -35,293 +35,276 @@
 
 ## Dependencies and Compatibility
 
-SubGraph is written in `.cljc` and depends on Clojure or ClojureScript
-version 1.7.0 or higher.
+SubGraph is written in `.cljc` and depends on Clojure or ClojureScript version 1.8.0 or higher.
 
-To run the tests you will need clojure.spec.alpha, available in Clojure
-1.9.0-alpha17 or higher.
+To run the tests you will need clojure.spec.alpha, available in Clojure 1.9.0-alpha17 or higher.
+
+`re-frame` and `reagent` are provided dependencies and will need to be included in your own project's depencies.
 
 
 
-## Discussion
+## Terminology
 
-Please post questions and issues to the Github issues system.
+
+
+### Entity
+
+SubGraph entities are regular maps that can be uniquely identified by one (and currently only one) of their entries.
+
+
+
+### Lookup ref
+
+A lookup-ref is a 2-element vector representing an entity's identifying key and its associated value.
+
+
+
+### Normalization
+
+Normalization is the process of eliminating redundancy in entities by replacing every the other entities that it references, aka joins, with lookup refs.
+
+
+
+### Database
+
+The SubGraph database is a regular map associating lookup refs to their corresponding entities.
 
 
 
 ## Usage
 
-```clojure
-(ns examples
-  (:require [com.stuartsierra.mapgraph :as mg]))
-```
+This section shows how to initialize a SubGraph database, add, query and update entities using `re-frame` event handlers and subscriptions.
 
-Create a new Subgraph database with `new-db`. You will probably want
-to store it in a mutable reference such as an Atom.
+For more usage examples of interacting directly with the database, refer to the [usage section in the MapGraph README](https://github.com/stuartsierra/mapgraph#usage)
+
+In the following examples we'll setup a reactive database dealing with users and their favorite colors. When denormalized the data looks like this:
 
 ```clojure
-(def db (atom (mg/new-db)))
-```
-
-Add the unique identity attributes that define your schema.
-
-```clojure
-(swap! db mg/add-id-attr :user/id :color/hex)
-```
-
-Add entities to your database with `add`. You can add multiple
-entities at once, and they may be nested.
-
-```clojure
-(swap! db mg/add
-       {:user/id 1
-        :user/name "Pat"
-        :user/favorite-color {:color/hex "9C27B0"
-                              :color/name "Purple"}}
-                          ;  ^-- nested entity
-
-       {:user/id 2
-        :user/name "Reese"
-        :user/favorite-color {:color/hex "D50000"
-                              :color/name "Red"}})
-```
-
-Entities in the database are stored *normalized*: all nested entities
-are replaced with lookup refs. You can see this if you `get` an entity
-by its lookup ref.
-
-```clojure
-(get @db [:user/id 2])
-;;=> {:user/id 2,
-;;    :user/name "Reese",
-;;    :user/favorite-color [:color/hex "D50000"]}
-                        ;  ^-- lookup ref
-```
-
-To get back nested entities, use `pull`, which takes a pattern
-describing which attributes and entities you want to get back.
-It is similar to [Datomic Pull].
-
-[Datomic Pull]: http://docs.datomic.com/pull.html
-
-```clojure
-(mg/pull @db
-         [:user/name {:user/favorite-color [:color/name]}]
-         [:user/id 2])
-;;=> {:user/name "Reese",
-;;    :user/favorite-color {:color/name "Red"}}
-```
-
-Entities with the same unique identity are merged.
-
-```clojure
-(swap! db
-       mg/add
-       {:user/id 1  ; "Pat"
-        :user/profession "Programmer"})
-
-(mg/pull @db
-         [:user/id :user/name :user/profession]
-         [:user/id 1])
-;; {:user/id 1,
-;;  :user/name "Pat",
-;;  :user/profession "Programmer"}
-```
-
-Entities can refer to other entities, forming a graph. The graph may
-have cycles.
-
-```clojure
-(swap! db
-       mg/add
-       {:user/id 1
-        :user/friends #{{:user/id 2}}}
-       {:user/id 2
-        :user/friends #{{:user/id 1}}})
-
-(mg/pull @db
-         [:user/name
-          {:user/friends [:user/name
-                          {:user/friends [:user/name]}]}]
-         [:user/id 1])
-;;=> {:user/name "Pat",
-;;    :user/friends #{{:user/name "Reese",
-;;                     :user/friends #{{:user/name "Pat"}}}}}
-```
-
-To remove an entity, `dissoc` its lookup ref. Dangling lookup refs
-will be ignored on subsequent `pull`.
-
-```clojure
-(swap! db dissoc [:user/id 2])  ; Reese
-
-(mg/pull @db '[*] [:user/id 2])
-;;=> nil
-
-(mg/pull @db
-         [:user/name
-          {:user/friends [:user/name]}]
-         [:user/id 1])
-;;=> {:user/name "Pat",
-;;    :user/friends #{}}
-                  ;  ^-- Reese is gone
+  {:user/id             1
+   :user/name           "Pat"
+   :user/favorite-color {:color/hex  "9C27B0"
+                         :color/name "Purple"}
+   :user/friends        [{:user/id             2
+                          :user/name           "Reese"
+                          :user/favorite-color {:color/hex  "D50000"
+                                                :color/name "Red"}}]}
 ```
 
 
-### Collections
-
-Attribute values can be any Clojure collection type.
+To get started we'll need re-frame, subgraph and the interop namespaces.
 
 ```clojure
-(swap! db mg/add
-       {:user/id 1
-        :user/favorite-sports '(hockey tennis golf)})
-
-(mg/pull @db
-         [:user/name :user/favorite-sports]
-         [:user/id 1])
-;;=> {:user/name "Pat", :user/favorite-sports (hockey tennis golf)}
+(ns example
+  (:require
+   [re-frame.core :as re-frame]
+   [vimsical.subgraph :as sg]
+   [vimsical.subgraph.re-frame :as sg.re-frame]))
 ```
 
-Merging a new collection value completely replaces the previous value.
+
+
+### Database initialization
+
+In order to avoid duplication we want to normalize not only users, but colors as well, looking at our denormalized data we see that our identifying attributes are `:user/id` and `:color/hex`.
+
+We can create a new empty database with `sg/new-db` but for normalization to work we'll have to configure it by adding our identifying attributes using `add-id-attr`.
 
 ```clojure
-(swap! db mg/add
-       {:user/id 1
-        :user/favorite-sports '(tennis polo)})
-
-(mg/pull @db
-         [:user/name :user/favorite-sports]
-         [:user/id 1])
-;;=> {:user/name "Pat", :user/favorite-sports (tennis polo)}
+(defn new-db
+  []
+  (-> (sg/new-db)
+      (sg/add-id-attr :user/id :color/hex)))
 ```
 
-A collection of nested entities may be a list, vector, set, or map in
-which the vals are entities.
+We're now able to produce a new empty db value, so we register a `re-frame` handler to initialize our app db, and dispatch it right away.
 
 ```clojure
-(def sample-host
-  {;; identifier
-   :host/ip "10.10.1.1"
-
-   ;; non-entity value
-   :host/name "web1"
-
-   ;; collections (list, vector, set, map) of non-entity values
-   :host/aliases ["host1" "www"]
-   :host/rules {"input" {"block" "*", "allow" 80}
-                "output" {"allow" 80}}
-
-   ;; single entity value
-   :host/gateway {:host/ip "10.10.10.1"}
-
-   ;; collection of entities (list, vector, set)
-   :host/peers #{{:host/ip "10.10.1.2", :host/name "web2"}
-                 {:host/ip "10.10.1.3"}}
-
-   ;; map of non-entity keys to entity vals
-   :host/connections {"database"         {:host/ip "10.10.1.4", :host/name "db"}
-                      ["cache" "level2"] {:host/ip "10.10.1.5", :host/name "cache"}}})
+(re-frame/reg-event-db ::new-db (constantly (new-db)))
 ```
-
-`pull` works the same way on single entities and collections of entities.
 
 ```clojure
-(def hosts
-  (atom (-> (mg/new-db)
-            (mg/add-id-attr :host/ip)
-            (mg/add sample-host))))
-
-(mg/pull @hosts
-         [:host/ip
-          :host/rules
-          {:host/gateway [:host/ip]
-           :host/peers [:host/ip]
-           :host/connections [:host/name]}]
-         [:host/ip "10.10.1.1"])
-;;=> {:host/ip "10.10.1.1",
-;;    :host/rules {"input" {"block" "*", "allow" 80},
-;;                 "output" {"allow" 80}},
-;;    :host/gateway {:host/ip "10.10.10.1"},
-;;    :host/peers #{{:host/ip "10.10.1.3"}
-;;                  {:host/ip "10.10.1.2"}},
-;;    :host/connections {"database" {:host/name "db"},
-;;                       ["cache" "level2"] {:host/name "cache"}}}
+(re-frame/dispatch [::new-db])
 ```
 
-Collections may not mix entities and non-entities.
+
+
+### Adding entities
+
+We can populate our database using `add` which accepts a variable number of entities. In order to be able to `add` data in reaction to user input in a component we'll need to invoke that function inside a `re-frame` event handler. The most generic of such handlers simply wraps `add`.
 
 ```clojure
-(try (swap! db mg/add {:user/id 3 :user/friends [{:user/id 1} "Bob"]})
-     (catch Throwable t t))
-;; #error {:data {:reason ::mg/mixed-collection,
-;;                ::mg/attribute :user/friends,
-;;                ::mg/value [{:user/id 1} "Bob"]}}
+(re-frame/reg-event-db
+ ::add
+ (fn [db [_ & entities]]
+   (apply sg/add db entities)))
 ```
 
+We can now dispatch `::add` events to populate our database. Note that nested entities are valid and will normalize recursively according to the attributes added with `add-id-attr`.
+
+```clojure
+(re-frame/dispatch
+ [::add
+  {:user/id             1
+   :user/name           "Pat"
+   :user/favorite-color {:color/hex  "9C27B0"
+                         :color/name "Purple"}}
+  {:user/id             2
+   :user/name           "Reese"
+   :user/favorite-color {:color/hex  "D50000"
+                         :color/name "Red"}}])
+```
+
+
+
+### Subscriptions and pull queries
+
+One of the design goals of SubGraph was to enable fully reactive pull queries against a (r)atom. Reactive pull queries return reactions that not only update with changes in that entity's pattern, but recursively for any joined entity.
+
+`vimsical.subgraph.re-frame/pull` is an api-compatible version of `vimsical.subgraph/pull` designed to work with (r)atoms. For convenience we also provide a re-frame raw subscription handler `vimsical.subgraph.re-frame/raw-sub-handler`.
+
+We register a generic subscription handler that we'll call `::q`.
+
+```clojure
+(re-frame/reg-sub-raw ::q sg.re-frame/raw-sub-handler)
+```
+
+This subscription accepts any pattern and lookup-ref, and will return a fully reactive reaction graph. 
+
+```clojure
+(deref
+ (re-frame/subscribe
+  [::q 
+   ;; Pattern
+   [:user/name {:user/favorite-color [:color/name]}]
+   ;; Lookup ref
+   [:user/id 2]]))
+
+;; => #:user{:name "Reese", :favorite-color #:color{:name "Red"}}
+```
+
+
+
+### Updates
+
+To update an entity we simply `add` it again to the database, the semantics are equivalent to that of `merge`. 
+
+Let's create a cycle by updating Pat and Reese, making them friends by referencing each other.
+
+```clojure
+(re-frame/dispatch
+ [::add
+  {:user/id 1 :user/friends #{{:user/id 2}}}
+  {:user/id 2 :user/friends #{{:user/id 1}}}])
+```
+
+Since queries can be arbitrarily nested, we can ask for Pat's friends' favorite colors.
+
+```clojure
+(deref
+ (re-frame/subscribe
+  [::q
+   [:user/name
+    {:user/friends
+     [:user/name {:user/favorite-color [:color/name]}]}]
+   [:user/id 1]]))
+
+;; => #:user{:name "Pat", :friends #{#:user{:name "Reese", :favorite-color #:color{:name "Red"}}}}
+```
+
+And then update Reese's favorite color.
+
+```clojure
+(re-frame/dispatch
+ [::add
+  {:user/id             2
+   :user/favorite-color {:color/hex  "1789d6"
+                         :color/name "DodgerBlue3"}}])
+```
+
+Thanks to normalization and our reactive graph, our subscription for Pat's friends' favorite colors updates, showing Reese's new favorite color.
+
+```clojure
+(deref
+ (re-frame/subscribe
+  [::q
+   [:user/name
+    {:user/friends
+     [:user/name {:user/favorite-color [:color/name]}]}]
+   [:user/id 1]]))
+
+;; => #:user{:name "Pat", :friends #{#:user{:name "Reese", :favorite-color #:color{:name "DodgerBlue3"}}}}
+```
+
+
+## Comparison with MapGraph
+
+The `vimsical.subgraph` namespace is api-compatible with `com.stuartsierra.mapgraph`, however SubGraph extends the query syntax with support for:
+
+- Recursive join queries
+
+Unbounded recursion should be used with caution since there is no mechanism to detect cycles. In our example of mutual friends, the following query would run infinitely .
+
+```clojure
+[:user/name
+ {:user/favorite-color [:color/name]}
+ {:user/friends '...}]
+```
+
+A number can be provided to limit the level of nesting.
+
+```clojure
+[:user/name
+ {:user/favorite-color [:color/name]}
+ {:user/friends 3}]
+```
+
+
+
+- Link references
+
+Applications commonly need to keep track of global references, such as the current user or a selection. This is easily achieved by storing a lookup-ref as a value in the database, for example `{:app/user [:user/id 1]}`. 
+
+SubGraph supports this pattern with a special query syntax identical to that of `om.next`.
+
+```clojure
+[{[:app/user '_] 
+  [:user/name
+    {:user/favorite-color [:color/name]}
+    {:user/friends 3}]}]
+```
+
+
+
+## Comparison with om.next 
+
+- No support for union queries
+- Non-extensible parser, and as such no support for parametrized joins or mutations
+- No indexer, SubGraph relies on reactions to update components in response to changing data
+- Normalization driven by the database's `id-attrs`, no components or query required to add entities
 
 
 ## Comparison with Datomic/Datascript
 
-Subgraph is designed to be used as a temporary store for data kept in
-[Datomic] or [Datascript].
-
-[Datomic]: http://www.datomic.com/
-[Datascript]: https://github.com/tonsky/datascript
-
-Subgraph is different from Datomic/Datascript in the following ways:
-
-* Schema only specifies unique identity attributes
-
-* Non-identity attributes do not need to be declared before they are
-  used
-
-* An entity must not have more than one unique identity attribute
-
-* Values may include collections of any type
-
-* Empty collections will be stored rather than ignored
-
-* Updating the value of an attribute with a collection always replaces
-  the entire previous value
-
-* No reverse attribute references (like `:user/_friends`)
-
-* No component attributes
-
-* `pull` does not support recursion, default values, limits, or
-  reverse lookup
-
-* No indexes
-
-* No queries, only lookup by unique identity attribute
-
-* No database entity IDs, only lookup refs
+Refer to [MapGraph's comparison](https://github.com/stuartsierra/mapgraph#comparison-with-datomicdatascript)
 
 
 
 ## Bug reports
 
-Please file issues on GitHub with minimal sample code that
-demonstrates the problem.
+Please file issues on GitHub with minimal sample code that demonstrates the problem.
 
 
 
 ## Contributing
 
-Please do not send pull requests without prior discussion.
-Please contact me via email first. Thank you.
+Pull request are welcome!
 
 
 
 ## Special thanks to 
 
-[Jeb Beich](https://github.com/jebberjeb) for discussion, early
-testing, and contributions.
-
-[Cognitect](http://www.cognitect.com/) for providing me with time to
-work on open-source projects. This library is my personal work and is
-not officially supported by Cognitect, Inc.
+[Stuart Sierra](https://github.com/stuartsierra/mapgraph) for MapGraph
+[David Nolen](https://github.com/swannodette) for ClojureScript and om.next
 
 
 
