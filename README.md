@@ -6,25 +6,25 @@
 
 ## Releases and Dependency Information
 
-* Latest stable release is [0.1.0](https://github.com/vimsical/subgraph/tree/0.1.0)
+* SNAPSHOT only, stable release coming soon
 
 * [All releases](https://clojars.org/vimsical/subgraph)
 
 [Leiningen] dependency information:
 
-    [vimsical/subgraph "0.1.0"]
+    [vimsical/subgraph "0.1.0-SNAPSHOT"]
 
 [Maven] dependency information:
 
     <dependency>
       <groupId>vimsical</groupId>
       <artifactId>subgraph</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.0-SNAPSHOT</version>
     </dependency>
 
 [Gradle] dependency information:
 
-    compile "vimsical:subgraph:0.1.0"
+    compile "vimsical:subgraph:0.1.0-SNAPSHOT"
 
 [Clojars]: http://clojars.org/
 [Leiningen]: http://leiningen.org/
@@ -302,4 +302,5 @@ Pull requests are welcome!
 ## Special thanks to 
 
 [Stuart Sierra](https://github.com/stuartsierra/mapgraph) for MapGraph
+
 [David Nolen](https://github.com/swannodette) for ClojureScript and om.next
