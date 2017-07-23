@@ -236,7 +236,9 @@ Thanks to normalization and our reactive graph, our subscription for Pat's frien
 
 ## Comparison with MapGraph
 
-The `vimsical.subgraph` namespace is api-compatible with `com.stuartsierra.mapgraph`, however SubGraph extends the query syntax with support for:
+SubGraph builds on a fork of Stuart Sierra's [MapGraph](https://github.com/stuartsierra/mapgraph), the implementation diverged in order to add support for (r)atoms in the `pull` api.
+
+The `vimsical.subgraph` namespace is api-compatible with `com.stuartsierra.mapgraph`, however SubGraph extends the pull query syntax with support for:
 
 - Recursive join queries
 
