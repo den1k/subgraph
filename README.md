@@ -4,6 +4,10 @@
 
 [![CircleCI](https://circleci.com/gh/vimsical/subgraph.svg?style=shield&circle-token=60839af806151dc02bcd591d9ec9a26875d0820b)](https://circleci.com/gh/vimsical/subgraph)
 
+[![Clojars Project](https://img.shields.io/clojars/v/vimsical/subgraph.svg)](https://clojars.org/vimsical/subgraph)
+
+
+
 ## Releases and Dependency Information
 
 * SNAPSHOT only, stable release coming soon
