@@ -238,6 +238,7 @@ Thanks to normalization and our reactive graph, our subscription for Pat's frien
 ```
 
 
+
 ## Comparison with MapGraph
 
 SubGraph builds on a fork of Stuart Sierra's [MapGraph](https://github.com/stuartsierra/mapgraph), the implementation diverged in order to add support for (r)atoms in the `pull` api.
@@ -281,10 +282,18 @@ SubGraph supports this pattern with a special query syntax identical to that of 
 
 ## Comparison with om.next 
 
-- No support for union queries
-- Non-extensible parser, and as such no support for parametrized joins or mutations
-- No indexer, SubGraph relies on reactions to update components in response to changing data
-- Normalization driven by the database's `id-attrs`, no components or query required to add entities
+
+### Limitations
+
+- SubGraph currently doesn't support union queries
+- SubGraph's query parser is not extensible, as such there is no support for parametrized joins and mutations
+
+
+### Differences
+
+- SubGraph doesn't have an indexer and relies on reagent reactions to update components when data changes.
+- Normalization is driven by the database's `id-attrs`, when adding entities no query, or component tree, is required.
+
 
 
 ## Comparison with Datomic/Datascript
