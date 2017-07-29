@@ -4,12 +4,14 @@
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.8.0"]]
-  :aliases {"bench-clj" ["run" "-m" "vimsical.subgraph.compare/bench"]
-            "bench-cljs" ["doo" "node" "bench" "once"]
-            "bench-all" ["do" "clean," ["bench-clj"] ["bench-cljs"]]
-            "test-clj" ["test"]
-            "test-cljs" ["doo" "node" "test" "once"]
-            "test-all" ["do" "clean," ["test-clj"] ["test-cljs"]]}
+  :aliases {"bench-jvm" ["run" "-m" "vimsical.subgraph.compare/bench"]
+            "bench-node" ["doo" "node" "bench" "once"]
+            "bench-browser" ["doo" "chrome-canary" "bench-browser" "once"]
+            "bench-all" ["do" "clean," ["bench-jvm"] ["bench-node"] ["bench-browser"]]
+            "test-jvm" ["test"]
+            "test-node" ["doo" "node" "test" "once"]
+            "test-all" ["do" "clean," ["test-jvm"] ["test-node"]]}
+
   :profiles
   {:provided {:dependencies [[re-frame "0.9.4"]
                              [reagent "0.6.0"]]}
@@ -34,7 +36,7 @@
    [{:id           "test"
      :source-paths ["src" "test"]
      :compiler     {:output-to "resources/out/test/main.js"
-                    :output-dir "resources/out/test/"
+                    :output-dir "resources/out/test"
                     :main vimsical.test-runner
                     :target :nodejs
                     :optimizations  :none
@@ -42,10 +44,16 @@
     {:id           "bench"
      :source-paths ["src" "test" "bench"]
      :compiler     {:output-to "resources/out/bench/main.js"
-                    :output-dir "resources/out/bench/"
+                    :output-dir "resources/out/bench"
                     :main vimsical.bench-runner
                     :target :nodejs
-                    ;; TODO figure out how to run in :advanced mode
                     :optimizations :none
+                    :parallel-build true}}
+    {:id           "bench-browser"
+     :source-paths ["src" "test" "bench"]
+     :compiler     {:output-to "resources/out/bench-browser/main.js"
+                    :output-dir "resources/out/bench-browser"
+                    :main vimsical.bench-runner
+                    :optimizations :advanced
                     :parallel-build true}}]}
   :repositories [["releases" "https://clojars.org/repo/"]])

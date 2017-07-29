@@ -16,3 +16,4 @@ pom.xml.asc
 *.iml
 .idea
 /resources
+/node_modules

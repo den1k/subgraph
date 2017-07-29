@@ -23,21 +23,21 @@ jobs:
             - ~/.lein
           key: lein-{{ checksum "project.clj" }}
 
-  test-clj:
+  test-jvm:
     <<: *defaults
     steps:
       - checkout
       - restore_cache:
           key: lein-{{ checksum "project.clj" }}
-      - run: lein test-clj
+      - run: lein test-jvm
 
-  test-cljs:
+  test-node:
     <<: *defaults
     steps:
       - checkout
       - restore_cache:
           key: lein-{{ checksum "project.clj" }}
-      - run: lein test-cljs
+      - run: lein test-node
 
 workflows:
   version: 2
@@ -45,10 +45,10 @@ workflows:
     jobs:
       - deps
 
-      - test-clj:
+      - test-jvm:
           requires:
             - deps
 
-      - test-cljs:
+      - test-node:
           requires:
             - deps

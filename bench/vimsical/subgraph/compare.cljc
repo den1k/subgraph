@@ -4,6 +4,7 @@
   (:require
    [clojure.spec.alpha :as s]
    [clojure.spec.gen.alpha :as gen]
+   [clojure.spec.test.alpha :as st]
    #?(:clj [clojure.test.check.clojure-test :refer [defspec]]
       :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
    [clojure.test.check.generators :as tgen]
@@ -198,7 +199,7 @@
      ::home-town [::town-id]}])
 
 ;;; Comparison tests
-#_
+
 (defspec t-equal-pull 100
   ;; Inserts the same entities into each database, pulls one back, and
   ;; verifies that the results are equal.
@@ -222,7 +223,7 @@
   (when run-fn
     (print-h3 (name db-type))
     #?(:clj (crit/quick-bench (run-fn))
-       :cljs (simple-benchmark [] (run-fn) 4000))))
+       :cljs (simple-benchmark [] (run-fn) 500))))
 
 (s/def ::db-type #?(:clj #{:mapgraph :datomic :datascript}
                     :cljs #{:mapgraph :datascript}))
