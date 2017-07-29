@@ -4,6 +4,10 @@
 
 [![CircleCI](https://circleci.com/gh/vimsical/subgraph.svg?style=shield&circle-token=60839af806151dc02bcd591d9ec9a26875d0820b)](https://circleci.com/gh/vimsical/subgraph)
 
+[![Clojars Project](https://img.shields.io/clojars/v/vimsical/subgraph.svg)](https://clojars.org/vimsical/subgraph)
+
+
+
 ## Releases and Dependency Information
 
 * SNAPSHOT only, stable release coming soon
@@ -234,9 +238,12 @@ Thanks to normalization and our reactive graph, our subscription for Pat's frien
 ```
 
 
+
 ## Comparison with MapGraph
 
-The `vimsical.subgraph` namespace is api-compatible with `com.stuartsierra.mapgraph`, however SubGraph extends the query syntax with support for:
+SubGraph builds on a fork of Stuart Sierra's [MapGraph](https://github.com/stuartsierra/mapgraph), the implementation diverged in order to add support for (r)atoms in the `pull` api.
+
+The `vimsical.subgraph` namespace is api-compatible with `com.stuartsierra.mapgraph`, however SubGraph extends the pull query syntax with support for:
 
 - Recursive join queries
 
@@ -275,10 +282,18 @@ SubGraph supports this pattern with a special query syntax identical to that of 
 
 ## Comparison with om.next 
 
-- No support for union queries
-- Non-extensible parser, and as such no support for parametrized joins or mutations
-- No indexer, SubGraph relies on reactions to update components in response to changing data
-- Normalization driven by the database's `id-attrs`, no components or query required to add entities
+
+### Limitations
+
+- SubGraph currently doesn't support union queries
+- SubGraph's query parser is not extensible, as such there is no support for parametrized joins and mutations
+
+
+### Differences
+
+- SubGraph doesn't have an indexer and relies on reagent reactions to update components when data changes.
+- Normalization is driven by the database's `id-attrs`, when adding entities no query, or component tree, is required.
+
 
 
 ## Comparison with Datomic/Datascript
