@@ -2,9 +2,12 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [clojure.spec.test.alpha :as st]
-            [clojure.test :refer [deftest is]]
-            [clojure.test.check.clojure-test :refer [defspec]]
-            [clojure.test.check.properties :as prop]
+            #?(:clj [clojure.test :refer [deftest is]]
+               :cljs [cljs.test :refer-macros [deftest is]])
+            #?(:clj [clojure.test.check.clojure-test :refer [defspec]]
+               :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
+            #?(:clj [clojure.test.check.properties :as prop]
+               :cljs [clojure.test.check.properties :as prop :include-macros true])
             [vimsical.subgraph :as sg]
             [vimsical.subgraph.examples :as examples]
             vimsical.subgraph.spec))

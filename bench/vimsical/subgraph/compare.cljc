@@ -4,15 +4,26 @@
   (:require
    [clojure.spec.alpha :as s]
    [clojure.spec.gen.alpha :as gen]
-   [clojure.test.check.clojure-test :refer [defspec]]
+   #?(:clj [clojure.test.check.clojure-test :refer [defspec]]
+      :cljs [clojure.test.check.clojure-test :refer-macros [defspec]])
    [clojure.test.check.generators :as tgen]
-   [clojure.test.check.properties :as prop]
+   #?(:clj [clojure.test.check.properties :as prop]
+      :cljs [clojure.test.check.properties :as prop :include-macros true])
    [clojure.walk :as walk]
    [vimsical.subgraph :as sg]
    [vimsical.subgraph.spec :as sg.spec]
-   [criterium.core :as crit]
+   #?(:clj [criterium.core :as crit])
    [datascript.core :as datascript]
-   [datomic.api :as datomic]))
+   #?(:clj [datomic.api :as datomic])))
+
+#?(:cljs (enable-console-print!))
+
+(defn print-h [n s]
+  (println
+   (str \newline (apply str (repeat n \#)) \space s \newline \newline)))
+(def print-h1 (partial print-h 1))
+(def print-h2 (partial print-h 2))
+(def print-h3 (partial print-h 3))
 
 ;;; Specs for generating entity data
 
@@ -46,42 +57,43 @@
 ;;; Setup
 
 (def datomic-schema
-  [{:db/ident ::person-id
-    :db/valueType :db.type/uuid
-    :db/cardinality :db.cardinality/one
-    :db/unique :db.unique/identity
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}
-   {:db/ident ::person-name
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}
-   {:db/ident ::person-age
-    :db/valueType :db.type/long
-    :db/cardinality :db.cardinality/one
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}
-   {:db/ident ::home-town
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/one
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}
-   {:db/ident ::friends
-    :db/valueType :db.type/ref
-    :db/cardinality :db.cardinality/many
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}
-   {:db/ident ::town-id
-    :db/valueType :db.type/long
-    :db/cardinality :db.cardinality/one
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}
-   {:db/ident ::town-name
-    :db/valueType :db.type/string
-    :db/cardinality :db.cardinality/one
-    :db/id (datomic/tempid :db.part/db)
-    :db.install/_attribute :db.part/db}])
+  #?(:clj
+     [{:db/ident ::person-id
+       :db/valueType :db.type/uuid
+       :db/cardinality :db.cardinality/one
+       :db/unique :db.unique/identity
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}
+      {:db/ident ::person-name
+       :db/valueType :db.type/string
+       :db/cardinality :db.cardinality/one
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}
+      {:db/ident ::person-age
+       :db/valueType :db.type/long
+       :db/cardinality :db.cardinality/one
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}
+      {:db/ident ::home-town
+       :db/valueType :db.type/ref
+       :db/cardinality :db.cardinality/one
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}
+      {:db/ident ::friends
+       :db/valueType :db.type/ref
+       :db/cardinality :db.cardinality/many
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}
+      {:db/ident ::town-id
+       :db/valueType :db.type/long
+       :db/cardinality :db.cardinality/one
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}
+      {:db/ident ::town-name
+       :db/valueType :db.type/string
+       :db/cardinality :db.cardinality/one
+       :db/id (datomic/tempid :db.part/db)
+       :db.install/_attribute :db.part/db}]))
 
 (def datascript-schema
   {::person-id {:db/unique :db.unique/identity}
@@ -98,11 +110,12 @@
 (defn new-datomic-db
   "Returns a new Datomic database with the test schema."
   []
-  (let [uri (str "datomic:mem://" (datomic/squuid))]
-    (datomic/create-database uri)
-    (let [conn (datomic/connect uri)]
-      @(datomic/transact conn datomic-schema)
-      (datomic/db conn))))
+  #?(:clj
+     (let [uri (str "datomic:mem://" (datomic/squuid))]
+       (datomic/create-database uri)
+       (let [conn (datomic/connect uri)]
+         @(datomic/transact conn datomic-schema)
+         (datomic/db conn)))))
 
 (defn new-datascript-db
   "Returns a new Datascript database with the test schema."
@@ -149,10 +162,12 @@
   [dbs entities]
   (let [{:keys [mapgraph datomic datascript]} dbs
         mapgraph (apply sg/add mapgraph entities)
-        datomic (:db-after
-                 (datomic/with
-                  datomic
-                  (add-tempids entities datomic/tempid)))
+        datomic #?(:cljs nil
+                   :clj
+                   (:db-after
+                    (datomic/with
+                     datomic
+                     (add-tempids entities datomic/tempid))))
         datascript (:db-after
                     (datascript/with
                      datascript
@@ -167,9 +182,10 @@
   (-> dbs
       (update :mapgraph sg/pull pull-expr lookup-ref)
       (update :datomic (fn [db]
-                         (-> (datomic/pull db pull-expr lookup-ref)
-                             vecs->sets
-                             remove-db-ids)))
+                         #?(:clj
+                            (-> (datomic/pull db pull-expr lookup-ref)
+                                vecs->sets
+                                remove-db-ids))))
       (update :datascript (fn [db]
                             (-> (datascript/pull db pull-expr lookup-ref)
                                 vecs->sets
@@ -182,7 +198,7 @@
      ::home-town [::town-id]}])
 
 ;;; Comparison tests
-
+#_
 (defspec t-equal-pull 100
   ;; Inserts the same entities into each database, pulls one back, and
   ;; verifies that the results are equal.
@@ -203,10 +219,13 @@
 (defn print-quick-bench
   "Prints db-type and runs Criterium quick-bench."
   [db-type run-fn]
-  (printf "%n### %s%n%n" (name db-type))
-  (crit/quick-bench (run-fn)))
+  (when run-fn
+    (print-h3 (name db-type))
+    #?(:clj (crit/quick-bench (run-fn))
+       :cljs (simple-benchmark [] (run-fn) 4000))))
 
-(s/def ::db-type #{:mapgraph :datomic :datascript})
+(s/def ::db-type #?(:clj #{:mapgraph :datomic :datascript}
+                    :cljs #{:mapgraph :datascript}))
 
 (s/def ::entities (s/coll-of map? :into []))
 
@@ -227,12 +246,14 @@
   ([] (bench-add print-quick-bench (new-dbs) (gen-entities 10)))
   ([bench-fn dbs entities]
    (let [{:keys [mapgraph datomic datascript]} (new-dbs)
-         datomic-entities (add-tempids entities datomic/tempid)
+         datomic-entities #?(:cljs nil :clj (add-tempids entities datomic/tempid))
          datascript-entities (add-tempids entities datascript/tempid)]
      {:mapgraph (bench-fn :mapgraph
                           #(apply sg/add mapgraph entities))
-      :datomic (bench-fn :datomic
-                         #(datomic/with datomic datomic-entities))
+      :datomic #?(:cljs nil
+                  :clj
+                  (bench-fn :datomic
+                            #(datomic/with datomic datomic-entities)))
       :datascript (bench-fn :datascript
                             #(datascript/with datascript datascript-entities))})))
 
@@ -256,14 +277,16 @@
    (let [{:keys [mapgraph datomic datascript]} (insert-all dbs entities)]
      {:mapgraph (bench-fn :mapgraph
                           #(sg/pull mapgraph pull-expr lookup-ref))
-      :datomic (bench-fn :datomic
-                         #(datomic/pull datomic pull-expr lookup-ref))
+      :datomic #?(:cljs nil
+                  :clj
+                  (bench-fn :datomic
+                            #(datomic/pull datomic pull-expr lookup-ref)))
       :datascript (bench-fn :datascript
                             #(datascript/pull datascript pull-expr lookup-ref))})))
 
 (defn bench []
-  (printf "%n# Bench%n%n")
-  (printf "%n## Add%n%n")
+  (print-h1 "Bench")
+  (print-h2 "Add")
   (bench-add)
-  (printf "%n## Pull%n%n")
+  (print-h2 "Pull")
   (bench-pull))
