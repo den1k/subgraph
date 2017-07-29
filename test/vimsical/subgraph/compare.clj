@@ -234,7 +234,7 @@
       :datomic (bench-fn :datomic
                          #(datomic/with datomic datomic-entities))
       :datascript (bench-fn :datascript
-                            #(datomic/with datomic datomic-entities))})))
+                            #(datascript/with datascript datascript-entities))})))
 
 (s/fdef bench-pull
         :args (s/? (s/cat :f ::bench-fn
@@ -260,3 +260,10 @@
                          #(datomic/pull datomic pull-expr lookup-ref))
       :datascript (bench-fn :datascript
                             #(datascript/pull datascript pull-expr lookup-ref))})))
+
+(defn bench []
+  (printf "%n# Bench%n%n")
+  (printf "%n## Add%n%n")
+  (bench-add)
+  (printf "%n## Pull%n%n")
+  (bench-pull))

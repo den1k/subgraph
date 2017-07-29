@@ -4,6 +4,7 @@
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.8.0"]]
+  :aliases {"bench" ["run" "-m" "vimsical.subgraph.compare/bench"]}
   :profiles
   {:provided {:dependencies [[re-frame "0.9.4"]]}
    :dev {:dependencies
