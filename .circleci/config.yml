@@ -1,19 +1,54 @@
+defaults: &defaults
+  working_directory: /tmp/vimsical-subgraph
+
+  docker:
+    - image: julienfantin/circleci-cljc:0.0.1
+
+  environment:
+    LEIN_ROOT: true
+    LEIN_SNAPSHOTS_IN_RELEASE: true
+
 version: 2
 jobs:
-  build:
-    working_directory: ~/subgraph
-    docker:
-      - image: circleci/clojure:lein-2.7.1
-    environment:
-      LEIN_ROOT: nbd
-      JVM_OPTS: -Xmx3200m
+  deps:
+    <<: *defaults
     steps:
       - checkout
       - restore_cache:
-          key: subgraph-{{ checksum "project.clj" }}
+          key: lein-{{ checksum "project.clj" }}
       - run: lein deps
       - save_cache:
           paths:
             - ~/.m2
-          key: subgraph-{{ checksum "project.clj" }}
-      - run: lein test
+            - ~/.lein
+          key: lein-{{ checksum "project.clj" }}
+
+  test-clj:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: lein-{{ checksum "project.clj" }}
+      - run: lein test-clj
+
+  test-cljs:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: lein-{{ checksum "project.clj" }}
+      - run: lein test-cljs
+
+workflows:
+  version: 2
+  build-test:
+    jobs:
+      - deps
+
+      - test-clj:
+          requires:
+            - deps
+
+      - test-cljs:
+          requires:
+            - deps
