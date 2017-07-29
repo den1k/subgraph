@@ -234,7 +234,7 @@
       :datomic (bench-fn :datomic
                          #(datomic/with datomic datomic-entities))
       :datascript (bench-fn :datascript
-                            #(datomic/with datomic datomic-entities))})))
+                            #(datascript/with datascript datascript-entities))})))
 
 (s/fdef bench-pull
         :args (s/? (s/cat :f ::bench-fn
