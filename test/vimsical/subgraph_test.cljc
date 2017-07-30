@@ -133,6 +133,29 @@
           [:user/id :user/name {:user/friends '...}]
           [:user/id 1]))))
 
+(deftest t-add-right-and-left
+  (let [new-db (-> (sg/new-db)
+                   (sg/add-id-attr :db/id))
+        parent {:db/id             1
+                :entity/parent     nil
+                :entity/children   []}
+        db (sg/add new-db parent)
+        child {:db/id             2
+               :entity/parent     parent
+               :entity/children   []}
+        db-left (sg/addl db (update parent :entity/children (fnil conj []) child))
+        db-right (sg/addr db (update parent :entity/children (fnil conj []) child))
+        expect {:vimsical.subgraph/id-attrs #{:db/id}
+                [:db/id 1] {:db/id 1 :entity/parent nil :entity/children [[:db/id 2]]}
+                [:db/id 2] {:db/id 2 :entity/parent [:db/id 1] :entity/children []}}]
+    ;; When traversing left to right we add the parent, then the
+    ;; child. Therefore the reference to the parent in the child ends up
+    ;; overwriting the first value we added for the parent, thus getting rid of
+    ;; our new join!
+    (is (not= expect db-left))
+    ;; When traversed right to left we first add the parent as it appears in the
+    ;; child, and then we add the occurrence of the parent that we updated...
+    (is (= expect db-right))))
 
 ;;; Generative tests
 

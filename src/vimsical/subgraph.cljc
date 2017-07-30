@@ -212,16 +212,48 @@
   [db & id-keys]
   (update db ::id-attrs into id-keys))
 
-(defn add
+(defn- add-normalized-entities
   "Returns updated db with normalized entities merged in."
-  [db & entities]
+  [db normalized-entities]
   (let [id-attrs (::id-attrs db)]
     (persistent!
      (reduce (fn [db e]
                (let [ref (get-ref e id-attrs)]
                  (update! db ref merge e)))
              (transient db)
-             (mapcat #(normalize-entities % id-attrs) entities)))))
+             normalized-entities))))
+
+(defn addl
+  "Update the db by normalizing and merging entities, each entity is traversed
+  from left to right, i.e. from the root to the leaves.
+
+  Traversal order matters when joins cause the same entity to occur multiple
+  times with different values. This function will merge the values found lower
+  in the tree on top of the ones upper in the tree.
+
+  See also `vimsical.subgraph/addr`"
+  [db & entities]
+  (let [id-attrs (::id-attrs db)
+        normalized-entities (mapcat #(normalize-entities % id-attrs) entities)]
+    (add-normalized-entities db normalized-entities)))
+
+(defn addr
+  "Update the db by normalizing and merging entities, each entity is traversed
+  from right to left, i.e. from the leaves to the root.
+
+  Traversal order matters when joins cause the same entity to occur multiple
+  times with different values. This function will merge the values found upper
+  in the tree on top of the ones lower in the tree.
+
+  See also `vimsical.subgraph/addl`"
+  [db & entities]
+  (let [id-attrs (::id-attrs db)
+        normalized-entities (mapcat (comp reverse #(normalize-entities % id-attrs)) entities)]
+    (add-normalized-entities db normalized-entities)))
+
+(def add
+  "See `vimsical.subgraph/addl`."
+  addl)
 
 (defn entity?
   "Returns true if map is an entity according to the db schema. An
