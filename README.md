@@ -164,10 +164,10 @@ One of the design goals of SubGraph was to enable fully reactive pull queries ag
 
 `vimsical.subgraph.re-frame/pull` is an api-compatible version of `vimsical.subgraph/pull` designed to work with (r)atoms. For convenience we also provide a re-frame raw subscription handler `vimsical.subgraph.re-frame/raw-sub-handler`.
 
-We register a generic subscription handler that we'll call `::q`.
+We register a generic subscription handler that we'll call `:q`.
 
 ```clojure
-(re-frame/reg-sub-raw ::q sg.re-frame/raw-sub-handler)
+(re-frame/reg-sub-raw :q sg.re-frame/raw-sub-handler)
 ```
 
 This subscription accepts any pattern and lookup-ref, and will return a fully reactive reaction graph. 
@@ -175,7 +175,7 @@ This subscription accepts any pattern and lookup-ref, and will return a fully re
 ```clojure
 (deref
  (re-frame/subscribe
-  [::q 
+  [:q 
    ;; Pattern
    [:user/name {:user/favorite-color [:color/name]}]
    ;; Lookup ref
@@ -204,7 +204,7 @@ Since queries can be arbitrarily nested, we can ask for Pat's friends' favorite 
 ```clojure
 (deref
  (re-frame/subscribe
-  [::q
+  [:q
    [:user/name
     {:user/friends
      [:user/name {:user/favorite-color [:color/name]}]}]
@@ -228,7 +228,7 @@ Thanks to normalization and our reactive graph, our subscription for Pat's frien
 ```clojure
 (deref
  (re-frame/subscribe
-  [::q
+  [:q
    [:user/name
     {:user/friends
      [:user/name {:user/favorite-color [:color/name]}]}]
