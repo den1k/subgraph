@@ -17,3 +17,4 @@ pom.xml.asc
 .idea
 /resources
 /node_modules
+/.cljs_node_repl/

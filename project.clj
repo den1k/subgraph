@@ -27,7 +27,9 @@
           [org.clojure/tools.namespace "0.3.0-alpha1"]
           [com.google.guava/guava "21.0"]
           [re-frame "0.9.4"]
-          [reagent "0.6.0"]]}}
+          [day8.re-frame/test "0.1.5"]
+          [reagent "0.6.0"]
+          [com.cemerick/piggieback "0.2.2-SNAPSHOT"]]}}
   :plugins [[lein-doo "0.1.7"]
             [lein-cljsbuild "1.1.6"]]
   :clean-targets ^{:protect false} ["resources/out" "target/"]
