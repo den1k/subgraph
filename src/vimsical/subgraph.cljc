@@ -78,7 +78,9 @@
   links to that entity.
 
   To get nested maps back out, use `pull`, which follows a pull
-  pattern to recursively expand entity lookup refs.")
+  pattern to recursively expand entity lookup refs."
+  (:require
+   [vimsical.subgraph.parser.cache :as parser.cache]))
 
 (defn- seek [pred s]
   (some #(when (pred %) %) s))
@@ -391,7 +393,7 @@
 
 (defmethod parse-expr ::*
   [{:keys [entity]} result _]
-  (merge result (apply dissoc entity (keys result))))
+  (merge entity result))
 
 (defmethod parse-expr ::link
   [{:keys [parser db db-get-ref] :as context} result link-map]
@@ -427,17 +429,19 @@
    (pull db pattern nil nil))
   ([db pattern lookup-ref]
    (pull db pattern lookup-ref nil))
-  ([db pattern lookup-ref {:as   options
-                           :keys [parser
+  ([db pattern lookup-ref {:keys [cache?
+                                  db-get-ref
                                   db-ref?
-                                  db-get-ref]
-                           :or   {parser     parse-expr
+                                  parser]
+                           :or   {cache?     true
+                                  db-get-ref default-get-ref
                                   db-ref?    ref?
-                                  db-get-ref default-get-ref}}]
-   (let [context {:parser     parser
-                  :db         db
-                  :db-ref?    db-ref?
+                                  parser     parse-expr}}]
+   (let [context {:db         db
                   :db-get-ref db-get-ref
-                  :lookup-ref lookup-ref}
+                  :db-ref?    db-ref?
+                  :lookup-ref lookup-ref
+                  :parser     (cond-> parser
+                                cache? (parser.cache/wrap-cache db))}
          result  {}]
      (parser context result pattern))))
