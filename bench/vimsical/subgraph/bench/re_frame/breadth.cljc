@@ -124,7 +124,13 @@
     (clear-subscription-cache!)
     (re-frame/dispatch-sync [::init])
 
-    (println "\n## Baseline")
+    (println "\n## Baseline no cache")
+    (let [db @(re-frame/subscribe [::db])]
+      (time
+       (doseq [ref refs]
+         (time (sg/pull db query ref {:cache? false})))))
+
+    (println "\n## Baseline cached")
     (let [db @(re-frame/subscribe [::db])]
       (time
        (doseq [ref refs]

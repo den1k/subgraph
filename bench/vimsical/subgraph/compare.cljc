@@ -181,7 +181,8 @@
   "Pulls the same entity from each database in the dbs map."
   [dbs pull-expr lookup-ref]
   (-> dbs
-      (update :mapgraph sg/pull pull-expr lookup-ref)
+      (update :mapgraph-cached sg/pull pull-expr lookup-ref)
+      (update :mapgraph-no-cache sg/pull pull-expr lookup-ref {:cache? false})
       (update :datomic (fn [db]
                          #?(:clj
                             (-> (datomic/pull db pull-expr lookup-ref)
@@ -225,8 +226,8 @@
     #?(:clj (crit/quick-bench (run-fn))
        :cljs (simple-benchmark [] (run-fn) 500))))
 
-(s/def ::db-type #?(:clj #{:mapgraph :datomic :datascript}
-                    :cljs #{:mapgraph :datascript}))
+(s/def ::db-type #?(:clj #{:mapgraph-cached :mapgraph-no-cache :datomic :datascript}
+                    :cljs #{:mapgraph-cached :mapgraph-no-cache :datascript}))
 
 (s/def ::entities (s/coll-of map? :into []))
 
@@ -276,8 +277,10 @@
                  [::person-id (::person-id (last entities))])))
   ([bench-fn dbs entities pull-expr lookup-ref]
    (let [{:keys [mapgraph datomic datascript]} (insert-all dbs entities)]
-     {:mapgraph (bench-fn :mapgraph
-                          #(sg/pull mapgraph pull-expr lookup-ref))
+     {:mapgraph-no-cache (bench-fn :mapgraph-no-cache
+                                   #(sg/pull mapgraph pull-expr lookup-ref {:cache? false}))
+      :mapgraph-cached (bench-fn :mapgraph-cached
+                                 #(sg/pull mapgraph pull-expr lookup-ref))
       :datomic #?(:cljs nil
                   :clj
                   (bench-fn :datomic
